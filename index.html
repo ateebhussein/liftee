@@ -1,0 +1,2003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>Liftee — Workout Log</title>
+
+<!-- iOS "Add to Home Screen" behavior -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Liftee">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#15161B">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="icon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700;800&family=Fraunces:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  :root{
+    --bg: #15161B;
+    --surface: #1E2027;
+    --surface-2: #262832;
+    --surface-3: #2E313C;
+    --line: #34363F;
+    --ink: #EDEDE6;
+    --ink-dim: #9A9CA8;
+    --ink-faint: #5E6069;
+    --accent: #E8B23D;
+    --accent-ink: #15161B;
+    --pr: #8FB86B;
+    --danger: #C1554D;
+    --radius: 10px;
+  }
+
+  * { box-sizing: border-box; -webkit-user-select: none; user-select: none; }
+  input { -webkit-user-select: text; user-select: text; }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Open Sans', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    justify-content: center;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 480px;
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: var(--bg);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid var(--line);
+    border-right: 1px solid var(--line);
+    overflow-x: hidden;
+  }
+  .app.has-nav {
+    padding-bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+
+  h1, h2, h3 {
+    font-family: 'Open Sans', sans-serif;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: 0.2px;
+  }
+
+  .num {
+    font-family: 'Open Sans', sans-serif;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- Top bar ---------- */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: calc(20px + env(safe-area-inset-top)) 18px 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    cursor: pointer;
+  }
+  .brand h1 {
+    font-family: 'Fraunces', serif;
+    font-size: 21px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+  }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .unit-toggle {
+    display: flex;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .unit-toggle button {
+    background: none;
+    border: none;
+    color: var(--ink-dim);
+    font-family: 'Open Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 6px 12px;
+    cursor: pointer;
+  }
+  .unit-toggle button.active {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+  .settings-btn {
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--ink-dim);
+    font-size: 15px;
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    cursor: pointer;
+    display: none;
+  }
+  .settings-btn.visible { display: inline-flex; align-items: center; justify-content: center; }
+
+  /* ---------- Screens ---------- */
+  .screen { display: none; padding: 18px; }
+  .screen.visible { display: block; }
+
+  /* ---------- Auth / onboarding screens ---------- */
+  .centered-screen.visible { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+  .login-wrap {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 20px;
+  }
+  .login-wrap h2 {
+    font-size: 22px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+  .login-wrap p {
+    color: var(--ink-dim);
+    font-size: 13px;
+    line-height: 1.6;
+    max-width: 320px;
+    margin-bottom: 28px;
+  }
+  .google-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--ink);
+    color: #1A1A1A;
+    border: none;
+    border-radius: 8px;
+    padding: 13px 22px;
+    font-family: 'Open Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .google-btn svg { width: 18px; height: 18px; }
+  #authStatus, #confirmEmailStatus, #connectGoogleStatus, #chooseSheetStatus {
+    margin-top: 18px;
+    font-size: 12px;
+    color: var(--ink-faint);
+    min-height: 16px;
+  }
+  .auth-form {
+    width: 100%;
+    max-width: 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .auth-input {
+    width: 100%;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--ink);
+    font-family: 'Open Sans', sans-serif;
+    font-size: 16px;
+    padding: 13px 14px;
+  }
+  .auth-input:focus { outline: none; border-color: var(--accent); }
+  .auth-toggle-row {
+    margin-top: 18px;
+    font-size: 13px;
+    color: var(--ink-dim);
+  }
+  .auth-toggle-row a {
+    color: var(--accent);
+    font-weight: 600;
+    text-decoration: none;
+    margin-left: 4px;
+  }
+  .setup-note {
+    position: absolute;
+    bottom: 24px;
+    left: 20px;
+    right: 20px;
+    font-size: 10px;
+    color: var(--ink-faint);
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  /* ---------- Home ---------- */
+  .greeting {
+    color: var(--ink-dim);
+    font-size: 13px;
+    margin-bottom: 2px;
+  }
+  .greeting-date {
+    font-size: 18px;
+    margin-bottom: 22px;
+  }
+
+  .start-btn {
+    width: 100%;
+    background: var(--accent);
+    color: var(--accent-ink);
+    border: none;
+    border-radius: var(--radius);
+    padding: 20px;
+    font-family: 'Open Sans', sans-serif;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-bottom: 26px;
+  }
+  .start-btn:active { transform: scale(0.99); }
+
+  .section-label {
+    font-size: 11px;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    margin-bottom: 10px;
+  }
+
+  .stat-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 26px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 14px 10px;
+    text-align: center;
+  }
+  .stat-card .num { font-size: 20px; }
+  .stat-card .label {
+    font-size: 10px;
+    color: var(--ink-dim);
+    margin-top: 4px;
+  }
+
+  .empty-state {
+    border: 1px dashed var(--line);
+    border-radius: var(--radius);
+    padding: 26px 18px;
+    text-align: center;
+    color: var(--ink-dim);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .history-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    cursor: pointer;
+  }
+  .history-card .hc-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+  }
+  .history-card .hc-title { font-size: 15px; }
+  .history-card .hc-date { font-size: 11px; color: var(--ink-faint); }
+  .history-card .hc-meta { font-size: 12px; color: var(--ink-dim); }
+  .history-card .hc-pr {
+    display: inline-block;
+    background: rgba(143,184,107,0.15);
+    color: var(--pr);
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 999px;
+    margin-left: 6px;
+  }
+
+  /* ---------- Active workout ---------- */
+  .workout-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+  .workout-head input {
+    background: none;
+    border: none;
+    color: var(--ink);
+    font-family: 'Open Sans', sans-serif;
+    font-size: 20px;
+    font-weight: 600;
+    width: 65%;
+    padding: 0;
+  }
+  .workout-head input:focus { outline: none; border-bottom: 1px solid var(--accent); }
+  .timer-pill {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 12px;
+    color: var(--ink-dim);
+  }
+
+  .exercise-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  .exercise-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .exercise-card-head h3 { font-size: 15px; font-weight: 500; }
+  .exercise-card-head .cat { font-size: 10px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.8px; }
+  .ex-head-left { display: flex; align-items: center; gap: 10px; }
+  .ex-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+  .ex-remove {
+    background: none;
+    border: none;
+    color: var(--ink-faint);
+    font-size: 17px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px;
+  }
+
+  .chip-row {
+    display: flex;
+    gap: 8px;
+    padding: 10px 14px 2px;
+    flex-wrap: wrap;
+  }
+  .chip {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--ink-dim);
+    font-family: 'Open Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 6px 12px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .chip:active { border-color: var(--accent); color: var(--accent); }
+
+  .rest-setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    font-size: 12px;
+    color: var(--ink-dim);
+  }
+
+  .sets-table { width: 100%; border-collapse: collapse; }
+  .sets-table th {
+    font-size: 10px;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    font-weight: 500;
+    text-align: center;
+    padding: 8px 4px 4px;
+  }
+  .sets-table td { padding: 5px 4px; text-align: center; }
+  .sets-table .prev-cell { color: var(--ink-faint); font-size: 11px; }
+  .sets-table input[type="number"] {
+    width: 52px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    color: var(--ink);
+    font-family: 'Open Sans', sans-serif;
+    font-size: 16px;
+    text-align: center;
+    padding: 7px 2px;
+  }
+  .sets-table input[type="number"]:focus { outline: none; border-color: var(--accent); }
+  .set-num { color: var(--ink-dim); font-size: 12px; }
+
+  .check-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+    color: var(--ink-faint);
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .check-btn.done {
+    background: var(--pr);
+    border-color: var(--pr);
+    color: #15161B;
+  }
+  tr.set-done { background: rgba(143,184,107,0.10); }
+  tr.set-done td input { border-color: rgba(143,184,107,0.4); }
+
+  .add-set-btn {
+    width: 100%;
+    background: none;
+    border: none;
+    border-top: 1px solid var(--line);
+    color: var(--ink-dim);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 10px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+  }
+  .add-set-btn:hover { color: var(--accent); }
+
+  .add-exercise-btn {
+    width: 100%;
+    background: var(--surface);
+    border: 1px dashed var(--line);
+    border-radius: var(--radius);
+    color: var(--ink-dim);
+    padding: 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 18px;
+  }
+  .add-exercise-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .rest-row td {
+    padding: 6px 10px !important;
+  }
+  .rest-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+  .rest-bar-track {
+    flex: 1;
+    height: 3px;
+    background: var(--surface-3);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .rest-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 1s linear;
+  }
+  .rest-time-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--accent);
+    white-space: nowrap;
+    min-width: 34px;
+    text-align: right;
+  }
+
+  .warmup-badge {
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 10px;
+  }
+
+  .finish-btn {
+    width: 100%;
+    background: var(--pr);
+    color: #14170F;
+    border: none;
+    border-radius: var(--radius);
+    padding: 16px;
+    font-family: 'Open Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    cursor: pointer;
+  }
+
+  .cancel-link {
+    display: block;
+    text-align: center;
+    color: var(--ink-faint);
+    font-size: 12px;
+    margin-top: 14px;
+    cursor: pointer;
+  }
+
+  /* ---------- Bottom nav ---------- */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 480px;
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+    display: none;
+    padding-bottom: env(safe-area-inset-bottom);
+    z-index: 20;
+  }
+  .bottom-nav.visible { display: flex; }
+  .nav-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--ink-faint);
+    font-family: 'Open Sans', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 13px 4px 15px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+  .nav-btn .dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: transparent;
+  }
+  .nav-btn.active { color: var(--ink); }
+  .nav-btn.active .dot { background: var(--accent); }
+
+  /* ---------- Overlay: exercise picker ---------- */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 40;
+  }
+  .overlay.visible { display: flex; }
+  .sheet {
+    background: var(--bg);
+    width: 100%;
+    max-width: 480px;
+    max-height: 82vh;
+    border-radius: 16px 16px 0 0;
+    border: 1px solid var(--line);
+    border-bottom: none;
+    display: flex;
+    flex-direction: column;
+  }
+  .sheet-head {
+    padding: 16px 16px 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  .sheet-head-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .sheet-head input[type="text"] {
+    width: 100%;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--ink);
+    font-size: 16px;
+    padding: 10px 12px;
+  }
+  .sheet-head input:focus { outline: none; border-color: var(--accent); }
+  .close-x {
+    background: none;
+    border: none;
+    color: var(--ink-faint);
+    font-size: 20px;
+    cursor: pointer;
+  }
+  .sheet-list { overflow-y: auto; padding: 6px 0 20px; }
+  .ex-cat-label {
+    font-size: 11px;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 12px 16px 4px;
+  }
+  .ex-option {
+    padding: 12px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--surface-2);
+  }
+  .ex-option:hover { background: var(--surface); }
+
+  .toast {
+    position: fixed;
+    top: calc(16px + env(safe-area-inset-top));
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface-3);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 12px;
+    z-index: 60;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    max-width: 90%;
+    text-align: center;
+  }
+  .toast.visible { opacity: 1; }
+
+  /* ---------- Workout detail ---------- */
+  .detail-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .back-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 15px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .detail-head h2 { font-size: 18px; }
+  .detail-head .hc-date { margin-top: 2px; }
+  .detail-stat-row { margin-bottom: 22px; }
+  .sets-table.readonly td { padding: 8px 4px; }
+
+  /* ---------- Import overlay ---------- */
+  .import-body { padding: 20px; }
+  .import-body p {
+    color: var(--ink-dim);
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 0 0 20px;
+  }
+  #importStatus {
+    margin-top: 14px;
+    font-size: 12px;
+    color: var(--ink-faint);
+    text-align: center;
+    min-height: 16px;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <div class="topbar">
+    <div class="brand" onclick="goHome()"><h1>Liftee</h1></div>
+    <div class="topbar-right">
+      <button class="settings-btn" id="settingsBtn" onclick="openSettings()">&#9881;</button>
+    </div>
+  </div>
+
+  <!-- ===== AUTH (SIGN UP / LOG IN) ===== -->
+  <div class="screen visible centered-screen" id="screen-auth">
+    <div class="login-wrap">
+      <h2 id="authTitle">Create your account</h2>
+      <p>Liftee syncs your workouts to your own Google Sheet. Create an account, then connect Google once — you're set from there.</p>
+      <form class="auth-form" id="authForm" data-mode="signup" onsubmit="submitAuthForm(event)">
+        <input type="email" id="authEmail" class="auth-input" placeholder="Email" autocomplete="email" required>
+        <input type="password" id="authPassword" class="auth-input" placeholder="Password" autocomplete="new-password" minlength="6" required>
+        <button type="submit" class="start-btn" id="authSubmitBtn" style="margin-bottom:0;">Sign up</button>
+      </form>
+      <div class="auth-toggle-row">
+        <span id="authToggleText">Already have an account?</span><a href="javascript:void(0)" id="authToggleLink" onclick="toggleAuthMode()">Log in</a>
+      </div>
+      <div id="authStatus"></div>
+    </div>
+    <div class="setup-note" id="setupNote"></div>
+  </div>
+
+  <!-- ===== CONFIRM EMAIL ===== -->
+  <div class="screen centered-screen" id="screen-confirm-email">
+    <div class="login-wrap">
+      <h2>Check Your Email</h2>
+      <p>We sent a confirmation link to <strong id="confirmEmailAddress"></strong>. Click it to activate your account, then come back and log in.</p>
+      <button class="start-btn" style="background:var(--surface-2);color:var(--ink);" onclick="resendConfirmation()">Resend Email</button>
+      <div class="cancel-link" onclick="setAuthMode('login'); showScreen('auth');">Back to login</div>
+      <div id="confirmEmailStatus"></div>
+    </div>
+  </div>
+
+  <!-- ===== CONNECT GOOGLE (one-time, required) ===== -->
+  <div class="screen centered-screen" id="screen-connect-google">
+    <div class="login-wrap">
+      <h2>Connect Google Sheets</h2>
+      <p>Liftee writes your workouts to a Google Sheet in your own Drive — nowhere else. This is a one-time step; you won't see this again after today.</p>
+      <button class="google-btn" onclick="connectGoogle()">
+        <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.1 8 3l6-6C34.5 5.1 29.5 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.2-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.6 18.9 12 24 12c3.1 0 5.9 1.1 8 3l6-6C34.5 5.1 29.5 3 24 3 16 3 9.1 7.6 6.3 14.7z"/><path fill="#4CAF50" d="M24 45c5.4 0 10.3-1.9 14.1-5.1l-6.5-5.5C29.5 36.4 26.9 37 24 37c-5.2 0-9.6-3.1-11.3-7.9l-6.5 5C9.1 40.4 16 45 24 45z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.2 5.6l6.5 5.5C41.2 36 45 30.5 45 24c0-1.2-.1-2.4-.4-3.5z"/></svg>
+        Connect Google
+      </button>
+      <div id="connectGoogleStatus"></div>
+    </div>
+  </div>
+
+  <!-- ===== CHOOSE SHEET (one-time, required) ===== -->
+  <div class="screen centered-screen" id="screen-choose-sheet">
+    <div class="login-wrap">
+      <h2>Choose Your Sheet</h2>
+      <p>Create a fresh sheet for your workouts, or pick one you already have.</p>
+      <button class="start-btn" onclick="createNewSheet()">Create New Sheet</button>
+      <button class="start-btn" style="background:var(--surface-2);color:var(--ink);margin-top:10px;" onclick="openExistingSheetPicker()">Select Existing Spreadsheet</button>
+      <div id="chooseSheetStatus"></div>
+    </div>
+  </div>
+
+  <!-- ===== HOME ===== -->
+  <div class="screen" id="screen-home">
+    <div class="greeting">Welcome back</div>
+    <div class="greeting-date" id="todayDate"></div>
+
+    <button class="start-btn" onclick="startWorkout()">Start Workout</button>
+
+    <div class="stat-row">
+      <div class="stat-card"><div class="num" id="statCount">0</div><div class="label">Workouts logged</div></div>
+      <div class="stat-card"><div class="num" id="statVolume">0</div><div class="label">Total volume</div></div>
+      <div class="stat-card"><div class="num" id="statPRs">0</div><div class="label">Total PRs</div></div>
+    </div>
+
+    <div class="section-label">Recent workouts</div>
+    <div id="homeHistoryList">
+      <div class="empty-state">Nothing logged yet. Tap <strong>Start Workout</strong> above to log your first session.</div>
+    </div>
+  </div>
+
+  <!-- ===== ACTIVE WORKOUT ===== -->
+  <div class="screen" id="screen-workout">
+    <div class="workout-head">
+      <input type="text" id="workoutTitle" value="Workout">
+      <div class="timer-pill" id="workoutTimer">00:00</div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-card"><div class="num" id="wsTime">0:00</div><div class="label">Time</div></div>
+      <div class="stat-card"><div class="num" id="wsVolume">0</div><div class="label">Volume</div></div>
+      <div class="stat-card"><div class="num" id="wsSets">0/0</div><div class="label">Sets</div></div>
+    </div>
+
+    <div class="rest-setting-row">
+      <span>Rest timer between sets</span>
+      <button class="chip" id="restDefaultChip" onclick="cycleRestDefault()">90s</button>
+    </div>
+
+    <div id="exerciseList"></div>
+
+    <button class="add-exercise-btn" onclick="openPicker()">+ Add Exercise</button>
+    <button class="finish-btn" onclick="finishWorkout()">Finish Workout</button>
+    <div class="cancel-link" onclick="cancelWorkout()">Discard this workout</div>
+  </div>
+
+  <!-- ===== HISTORY ===== -->
+  <div class="screen" id="screen-history">
+    <div class="section-label" style="margin-top:6px;">All workouts</div>
+    <div id="fullHistoryList">
+      <div class="empty-state">No workouts yet.</div>
+    </div>
+  </div>
+
+  <!-- ===== WORKOUT DETAIL ===== -->
+  <div class="screen" id="screen-detail">
+    <div class="detail-head">
+      <button class="back-btn" onclick="closeWorkoutDetail()">&larr;</button>
+      <div>
+        <h2 id="detailTitle">Workout</h2>
+        <div class="hc-date" id="detailDate"></div>
+      </div>
+    </div>
+    <div class="stat-row detail-stat-row" id="detailStats"></div>
+    <div id="detailExerciseList"></div>
+  </div>
+
+  <!-- ===== NAV ===== -->
+  <div class="bottom-nav" id="bottomNav">
+    <button class="nav-btn active" id="navHome" onclick="showScreen('home')">
+      <span class="dot"></span>Home
+    </button>
+    <button class="nav-btn" id="navHistory" onclick="showScreen('history')">
+      <span class="dot"></span>History
+    </button>
+  </div>
+
+
+  <!-- ===== EXERCISE PICKER OVERLAY ===== -->
+  <div class="overlay" id="pickerOverlay">
+    <div class="sheet">
+      <div class="sheet-head">
+        <div class="sheet-head-top">
+          <h2 style="font-size:15px;">Add Exercise</h2>
+          <button class="close-x" onclick="closePicker()">&times;</button>
+        </div>
+        <input type="text" id="exSearch" placeholder="Search exercises..." oninput="renderPicker()">
+      </div>
+      <div class="sheet-list" id="pickerList"></div>
+    </div>
+  </div>
+
+  <!-- ===== CSV IMPORT OVERLAY ===== -->
+  <div class="overlay" id="importOverlay">
+    <div class="sheet">
+      <div class="sheet-head">
+        <div class="sheet-head-top">
+          <h2 style="font-size:15px;">Import Your History</h2>
+        </div>
+      </div>
+      <div class="import-body">
+        <p>Have a Strong app export? Import it now to bring all your past workouts into this sheet — you'll be able to browse them right here.</p>
+        <div class="section-label" style="margin-top:0;">What units is the CSV in?</div>
+        <div class="unit-toggle" id="importUnitToggle" style="margin-bottom:20px;">
+          <button data-unit="kg" class="active" onclick="setImportUnit('kg')">KG</button>
+          <button data-unit="lb" onclick="setImportUnit('lb')">LB</button>
+        </div>
+        <button class="start-btn" onclick="document.getElementById('csvFileInput').click()">Choose CSV File</button>
+        <div class="cancel-link" id="importSkipBtn" onclick="skipImport()">Skip for now</div>
+        <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="handleCSVImport(event)">
+        <div id="importStatus"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== UNIT SETUP OVERLAY (first login) ===== -->
+  <div class="overlay" id="unitSetupOverlay">
+    <div class="sheet">
+      <div class="sheet-head">
+        <div class="sheet-head-top">
+          <h2 style="font-size:15px;">Choose Your Units</h2>
+        </div>
+      </div>
+      <div class="import-body">
+        <p>How do you want to log weight? This is set up once — you can still change it later in Settings.</p>
+        <button class="start-btn" onclick="chooseUnitSetup('kg')">Kilograms (KG)</button>
+        <button class="start-btn" style="background:var(--surface-2);color:var(--ink);margin-top:10px;" onclick="chooseUnitSetup('lb')">Pounds (LB)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SETTINGS OVERLAY ===== -->
+  <div class="overlay" id="settingsOverlay">
+    <div class="sheet">
+      <div class="sheet-head">
+        <div class="sheet-head-top">
+          <h2 style="font-size:15px;">Settings</h2>
+          <button class="close-x" onclick="closeSettings()">&times;</button>
+        </div>
+      </div>
+      <div class="import-body">
+        <div class="section-label" style="margin-top:0;">Units</div>
+        <div class="unit-toggle" id="settingsUnitToggle" style="margin-bottom:24px;">
+          <button data-unit="kg" onclick="setUnit('kg')">KG</button>
+          <button data-unit="lb" onclick="setUnit('lb')">LB</button>
+        </div>
+        <div class="section-label">Data</div>
+        <button class="add-exercise-btn" style="margin-bottom:20px;" onclick="openSettingsImport()">Import from Strong CSV</button>
+        <div class="cancel-link" style="color:var(--danger);" onclick="signOutFromSettings()">Sign out</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+</div>
+
+<script>
+/* ======================================================================
+   CONFIG — paste your Supabase project URL/anon key and your Google
+   Picker API key below. See README.md for the full setup (Supabase
+   project + SQL, Google Cloud OAuth Client + Picker key, Cloudflare
+   Pages + secrets). The anon key and Picker key are meant to be public
+   (protected by Row Level Security / an HTTP-referrer restriction,
+   respectively) — never put the Supabase service role key or the
+   Google OAuth client secret here.
+   ====================================================================== */
+const SUPABASE_URL = "https://PASTE_YOUR_PROJECT_REF.supabase.co";
+const SUPABASE_ANON_KEY = "PASTE_YOUR_SUPABASE_ANON_KEY";
+const PICKER_API_KEY = "PASTE_YOUR_GOOGLE_PICKER_API_KEY";
+
+const TAB_NAME = "WorkoutLog";
+const HEADER_ROW = ["Date","Workout Name","Duration","Exercise Name","Set Order","Weight","Reps","Distance","Seconds","Notes","Workout Notes","RPE"];
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ============ EXERCISE LIBRARY ============ */
+const EXERCISE_LIBRARY = [
+  {name:"Barbell Bench Press", cat:"Chest"},
+  {name:"Incline Dumbbell Press", cat:"Chest"},
+  {name:"Push-Up", cat:"Chest"},
+  {name:"Cable Fly", cat:"Chest"},
+  {name:"Deadlift", cat:"Back"},
+  {name:"Pull-Up", cat:"Back"},
+  {name:"Barbell Row", cat:"Back"},
+  {name:"Lat Pulldown", cat:"Back"},
+  {name:"Seated Cable Row", cat:"Back"},
+  {name:"Back Squat", cat:"Legs"},
+  {name:"Front Squat", cat:"Legs"},
+  {name:"Romanian Deadlift", cat:"Legs"},
+  {name:"Leg Press", cat:"Legs"},
+  {name:"Walking Lunge", cat:"Legs"},
+  {name:"Leg Curl", cat:"Legs"},
+  {name:"Calf Raise", cat:"Legs"},
+  {name:"Overhead Press", cat:"Shoulders"},
+  {name:"Lateral Raise", cat:"Shoulders"},
+  {name:"Face Pull", cat:"Shoulders"},
+  {name:"Barbell Curl", cat:"Arms"},
+  {name:"Hammer Curl", cat:"Arms"},
+  {name:"Tricep Pushdown", cat:"Arms"},
+  {name:"Skull Crusher", cat:"Arms"},
+  {name:"Plank", cat:"Core"},
+  {name:"Hanging Leg Raise", cat:"Core"},
+  {name:"Cable Crunch", cat:"Core"},
+];
+
+/* ============ STATE ============ */
+const REST_PRESETS = [15,30,45,60,90,120,150,180,240,300];
+let state = {
+  unit: 'kg',
+  activeWorkout: null,
+  history: [],
+  restDefault: 90,
+};
+
+let accessToken = null;
+let spreadsheetId = null;
+let tokenRefreshTimer = null;
+let restInterval = null;
+let workoutTimerInterval = null;
+let detailReturnScreen = 'home';
+let importContext = 'onboarding';
+let importCsvUnit = 'kg';
+let profile = null;           // row from public.profiles for the signed-in user
+let pendingConfirmEmail = null;
+let pickerLoaded = false;
+
+/* ============ INIT ============ */
+function init(){
+  document.getElementById('todayDate').textContent = new Date().toLocaleDateString(undefined, {weekday:'long', month:'long', day:'numeric'});
+
+  const savedWorkout = localStorage.getItem('liftee_active_workout');
+  if(savedWorkout){
+    try { state.activeWorkout = JSON.parse(savedWorkout); }
+    catch(e){ localStorage.removeItem('liftee_active_workout'); }
+  }
+
+  if(SUPABASE_URL.includes("PASTE_") || SUPABASE_ANON_KEY.includes("PASTE_")){
+    document.getElementById('setupNote').textContent = "Setup needed: add your Supabase project URL and anon key inside the code (see README.md).";
+  }
+
+  consumeGoogleRedirectHash();
+
+  supabaseClient.auth.onAuthStateChange((event) => {
+    if(event === 'SIGNED_IN') postLoginFlow();
+    if(event === 'SIGNED_OUT') resetToLoggedOutState();
+  });
+
+  supabaseClient.auth.getSession().then(({data}) => {
+    if(data.session) postLoginFlow();
+  });
+}
+
+function consumeGoogleRedirectHash(){
+  const hash = window.location.hash;
+  if(!hash.startsWith('#google_connected') && !hash.startsWith('#google_error')) return;
+  const params = new URLSearchParams(hash.slice(1));
+  history.replaceState(null, '', window.location.pathname + window.location.search);
+  if(params.has('google_error')){
+    showToast("Couldn't connect Google (" + params.get('google_error') + ")");
+  }
+  // Actual re-routing happens through the normal postLoginFlow(), triggered by
+  // the Supabase session (which survived the round-trip to Google and back)
+  // resolving via getSession() above.
+}
+
+async function setUnit(u){
+  state.unit = u;
+  syncUnitButtons();
+  if(state.activeWorkout) renderWorkout();
+  await persistProfileFields({ unit: u });
+}
+
+async function persistProfileFields(fields){
+  if(!profile) return;
+  Object.assign(profile, fields);
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(!session) return;
+  await supabaseClient.from('profiles').update(fields).eq('id', session.user.id);
+}
+
+function syncUnitButtons(){
+  document.querySelectorAll('#settingsUnitToggle button').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.unit === state.unit);
+  });
+}
+
+function setImportUnit(u){
+  importCsvUnit = u;
+  document.querySelectorAll('#importUnitToggle button').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.unit === u);
+  });
+}
+
+/* ============ SETTINGS ============ */
+function openSettings(){
+  syncUnitButtons();
+  document.getElementById('settingsOverlay').classList.add('visible');
+}
+function closeSettings(){
+  document.getElementById('settingsOverlay').classList.remove('visible');
+}
+function signOutFromSettings(){
+  closeSettings();
+  signOut();
+}
+function openSettingsImport(){
+  closeSettings();
+  openImportOverlay('manual');
+}
+
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('visible'));
+  document.getElementById('screen-'+name).classList.add('visible');
+  document.getElementById('navHome').classList.toggle('active', name==='home');
+  document.getElementById('navHistory').classList.toggle('active', name==='history');
+  if(name==='home') renderHome();
+  if(name==='history') renderFullHistory();
+}
+
+function goHome(){
+  if(document.getElementById('bottomNav').classList.contains('visible')) showScreen('home');
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('visible');
+  setTimeout(()=> t.classList.remove('visible'), 2400);
+}
+
+/* ============ AUTH (Supabase accounts) ============
+   Supabase email/password is the app's actual login. Its JS client persists
+   and refreshes its own session via plain first-party fetch() calls, so
+   (unlike the old Google-silent-refresh approach) staying signed in across
+   reloads isn't affected by Safari's tracking prevention at all.
+
+   Google OAuth is a separate, one-time-per-account "connect your sheet"
+   step (see CONNECT GOOGLE below) — never the login itself.
+   ============================================================ */
+function toggleAuthMode(){
+  const current = document.getElementById('authForm').dataset.mode;
+  setAuthMode(current === 'signup' ? 'login' : 'signup');
+}
+
+function setAuthMode(mode){
+  document.getElementById('authForm').dataset.mode = mode;
+  document.getElementById('authTitle').textContent = mode === 'signup' ? 'Create your account' : 'Welcome back';
+  document.getElementById('authSubmitBtn').textContent = mode === 'signup' ? 'Sign up' : 'Log in';
+  document.getElementById('authToggleText').textContent = mode === 'signup' ? 'Already have an account?' : "Don't have an account?";
+  document.getElementById('authToggleLink').textContent = mode === 'signup' ? 'Log in' : 'Sign up';
+  document.getElementById('authPassword').autocomplete = mode === 'signup' ? 'new-password' : 'current-password';
+  document.getElementById('authStatus').textContent = '';
+}
+
+async function submitAuthForm(e){
+  e.preventDefault();
+  const mode = document.getElementById('authForm').dataset.mode;
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const statusEl = document.getElementById('authStatus');
+  if(!email || !password) return;
+
+  statusEl.textContent = mode === 'signup' ? "Creating your account..." : "Signing in...";
+  try {
+    if(mode === 'signup'){
+      const { data, error } = await supabaseClient.auth.signUp({ email, password });
+      if(error) throw error;
+      statusEl.textContent = '';
+      if(!data.session){
+        pendingConfirmEmail = email;
+        document.getElementById('confirmEmailAddress').textContent = email;
+        showScreen('confirm-email');
+      }
+    } else {
+      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      if(error) throw error;
+      statusEl.textContent = '';
+    }
+  } catch(err){
+    console.error(err);
+    statusEl.textContent = err.message || "Something went wrong. Try again.";
+  }
+}
+
+async function resendConfirmation(){
+  if(!pendingConfirmEmail) return;
+  const statusEl = document.getElementById('confirmEmailStatus');
+  statusEl.textContent = "Sending...";
+  try {
+    const { error } = await supabaseClient.auth.resend({ type: 'signup', email: pendingConfirmEmail });
+    if(error) throw error;
+    statusEl.textContent = "Confirmation email sent again.";
+  } catch(err){
+    statusEl.textContent = err.message || "Couldn't resend. Try again.";
+  }
+}
+
+function signOut(){
+  clearTimeout(tokenRefreshTimer);
+  supabaseClient.auth.signOut();
+  // resetToLoggedOutState() runs via the SIGNED_OUT event from onAuthStateChange.
+}
+
+function resetToLoggedOutState(){
+  accessToken = null;
+  spreadsheetId = null;
+  profile = null;
+  state.history = [];
+  state.activeWorkout = null;
+  localStorage.removeItem('liftee_active_workout');
+  clearInterval(workoutTimerInterval);
+  stopAllRestTimers();
+  document.getElementById('settingsBtn').classList.remove('visible');
+  document.getElementById('bottomNav').classList.remove('visible');
+  document.querySelector('.app').classList.remove('has-nav');
+  setAuthMode('signup');
+  showScreen('auth');
+}
+
+/* ============ POST-LOGIN ROUTING ============ */
+async function postLoginFlow(){
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(!session) return;
+
+  try {
+    await loadProfile(session);
+  } catch(err){
+    console.error(err);
+  }
+
+  let status;
+  try {
+    status = await fetchJson('/api/google/status', session);
+  } catch(err){
+    console.error(err);
+    showScreen('connect-google');
+    return;
+  }
+
+  if(!status.connected){ showScreen('connect-google'); return; }
+  if(!status.hasSheet){ showScreen('choose-sheet'); return; }
+  spreadsheetId = status.spreadsheetId;
+
+  if(!profile.unit_setup_done){
+    document.getElementById('unitSetupOverlay').classList.add('visible');
+    return;
+  }
+  await continueAfterUnitSetup();
+}
+
+async function loadProfile(session){
+  const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
+  if(error) throw error;
+  profile = data;
+  state.unit = profile.unit;
+  state.restDefault = profile.rest_default_seconds;
+  syncUnitButtons();
+  updateRestDefaultChip();
+}
+
+async function fetchJson(path, session, opts){
+  const res = await fetch(path, {
+    ...opts,
+    headers: { Authorization: 'Bearer ' + session.access_token, ...(opts && opts.headers) },
+  });
+  if(!res.ok){
+    const err = new Error('request_failed:' + path);
+    err.status = res.status;
+    throw err;
+  }
+  return res.json();
+}
+
+/* ============ CONNECT GOOGLE (one-time per account) ============ */
+async function connectGoogle(){
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(!session) return;
+  const statusEl = document.getElementById('connectGoogleStatus');
+  statusEl.textContent = "";
+  try {
+    const data = await fetchJson('/api/google/start', session);
+    window.location.href = data.url;
+  } catch(err){
+    console.error(err);
+    statusEl.textContent = "Couldn't start Google sign-in. Try again.";
+  }
+}
+
+async function fetchAccessToken(){
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(!session) throw new Error('no_session');
+  const res = await fetch('/api/google/token', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + session.access_token },
+  });
+  if(!res.ok){
+    if(res.status === 409) showScreen('connect-google'); // revoked externally — needs reauth
+    throw new Error('token_fetch_failed');
+  }
+  const data = await res.json();
+  accessToken = data.access_token;
+  scheduleTokenRefresh(data.expires_in);
+  return accessToken;
+}
+
+function scheduleTokenRefresh(expiresInSeconds){
+  clearTimeout(tokenRefreshTimer);
+  const ms = Math.max(((expiresInSeconds || 3600) - 300) * 1000, 30000);
+  tokenRefreshTimer = setTimeout(()=>{ fetchAccessToken().catch(()=>{}); }, ms);
+}
+
+function authHeaders(){
+  return { Authorization: 'Bearer ' + accessToken };
+}
+
+/* ============ CHOOSE SHEET (one-time per account) ============ */
+async function createNewSheet(){
+  await submitSheetChoice({ mode: 'create' });
+}
+
+async function openExistingSheetPicker(){
+  const statusEl = document.getElementById('chooseSheetStatus');
+  statusEl.textContent = "Loading Google Drive...";
+  try {
+    await fetchAccessToken();
+    await ensurePickerLoaded();
+  } catch(err){
+    console.error(err);
+    statusEl.textContent = "Couldn't connect to Google. Try again.";
+    return;
+  }
+  statusEl.textContent = "";
+  const view = new google.picker.DocsView(google.picker.ViewId.SPREADSHEETS).setSelectFolderEnabled(false);
+  new google.picker.PickerBuilder()
+    .addView(view)
+    .setOAuthToken(accessToken)
+    .setDeveloperKey(PICKER_API_KEY)
+    .setCallback(onSheetPicked)
+    .build()
+    .setVisible(true);
+}
+
+function ensurePickerLoaded(){
+  return new Promise((resolve, reject) => {
+    if(pickerLoaded){ resolve(); return; }
+    const script = document.createElement('script');
+    script.src = 'https://apis.google.com/js/api.js';
+    script.onerror = reject;
+    script.onload = () => { gapi.load('picker', () => { pickerLoaded = true; resolve(); }); };
+    document.head.appendChild(script);
+  });
+}
+
+function onSheetPicked(data){
+  if(data.action !== google.picker.Action.PICKED) return;
+  const doc = data.docs[0];
+  submitSheetChoice({ mode: 'existing', spreadsheetId: doc.id, spreadsheetName: doc.name });
+}
+
+async function submitSheetChoice(body){
+  const statusEl = document.getElementById('chooseSheetStatus');
+  statusEl.textContent = "Setting up your sheet...";
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  try {
+    const data = await fetchJson('/api/google/select-sheet', session, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    spreadsheetId = data.spreadsheetId;
+    statusEl.textContent = "";
+    if(!profile.unit_setup_done){
+      document.getElementById('unitSetupOverlay').classList.add('visible');
+      return;
+    }
+    await continueAfterUnitSetup();
+  } catch(err){
+    console.error(err);
+    statusEl.textContent = "Couldn't set up that sheet. Try again.";
+  }
+}
+
+async function chooseUnitSetup(u){
+  state.unit = u;
+  syncUnitButtons();
+  document.getElementById('unitSetupOverlay').classList.remove('visible');
+  await persistProfileFields({ unit: u, unit_setup_done: true });
+  await continueAfterUnitSetup();
+}
+
+async function continueAfterUnitSetup(){
+  if(!profile.import_prompted){
+    openImportOverlay('onboarding');
+    return;
+  }
+  await finishLogin();
+}
+
+async function finishLogin(){
+  try {
+    await fetchAccessToken();
+    await loadHistoryFromSheet();
+    document.getElementById('settingsBtn').classList.add('visible');
+    document.getElementById('bottomNav').classList.add('visible');
+    document.querySelector('.app').classList.add('has-nav');
+    if(state.activeWorkout){
+      document.getElementById('workoutTitle').value = state.activeWorkout.title;
+      state.activeWorkout.exercises.forEach((ex, exIdx) => {
+        if(ex.restingSetIdx == null) return;
+        if(ex.restEndsAt <= Date.now()){ ex.restingSetIdx = null; return; }
+        startInlineRestTimer(exIdx, ex.restingSetIdx);
+      });
+      showScreen('workout');
+      renderWorkout();
+      startWorkoutTimer();
+    } else {
+      showScreen('home');
+    }
+  } catch(err){
+    console.error(err);
+    showToast("Couldn't reach Google Sheets. Check the setup guide and try again.");
+  }
+}
+
+/* ============ CSV IMPORT (Strong export) ============ */
+function parseCSV(text){
+  const rows = [];
+  let row = [];
+  let field = '';
+  let inQuotes = false;
+  for(let i=0; i<text.length; i++){
+    const c = text[i];
+    if(inQuotes){
+      if(c === '"'){
+        if(text[i+1] === '"'){ field += '"'; i++; }
+        else inQuotes = false;
+      } else {
+        field += c;
+      }
+    } else {
+      if(c === '"'){ inQuotes = true; }
+      else if(c === ','){ row.push(field); field = ''; }
+      else if(c === '\n'){ row.push(field); field = ''; rows.push(row); row = []; }
+      else if(c === '\r'){ /* skip, \n follows */ }
+      else { field += c; }
+    }
+  }
+  if(field.length > 0 || row.length > 0){ row.push(field); rows.push(row); }
+  return rows.filter(r => r.length > 1 || (r.length === 1 && r[0] !== ''));
+}
+
+function openImportOverlay(context){
+  importContext = context;
+  importCsvUnit = state.unit;
+  document.querySelectorAll('#importUnitToggle button').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.unit === importCsvUnit);
+  });
+  document.getElementById('importSkipBtn').textContent = context === 'onboarding' ? 'Skip for now' : 'Cancel';
+  document.getElementById('importStatus').textContent = '';
+  document.getElementById('csvFileInput').value = '';
+  document.getElementById('importOverlay').classList.add('visible');
+}
+
+function skipImport(){
+  document.getElementById('importOverlay').classList.remove('visible');
+  if(importContext === 'onboarding'){
+    persistProfileFields({ import_prompted: true });
+    finishLogin();
+  }
+}
+
+function convertWeightUnit(weight, fromUnit, toUnit){
+  const n = Number(weight);
+  if(!Number.isFinite(n) || fromUnit === toUnit) return weight;
+  const converted = fromUnit === 'lb' ? n * 0.453592 : n * 2.20462;
+  return Math.round(converted * 100) / 100;
+}
+
+async function handleCSVImport(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const statusEl = document.getElementById('importStatus');
+  statusEl.textContent = "Reading file...";
+  try {
+    const text = await file.text();
+    const allRows = parseCSV(text);
+    if(allRows.length && String(allRows[0][0]).trim().toLowerCase() === 'date'){
+      allRows.shift();
+    }
+    const needsConversion = importCsvUnit !== state.unit;
+    const dataRows = allRows
+      .filter(r => r[0] && r[3])
+      .map(r => {
+        const [date, name, duration, exName, setOrder, weight, reps, distance, seconds, notes, workoutNotes, rpe] = r;
+        const w = needsConversion ? convertWeightUnit(weight||'0', importCsvUnit, state.unit) : (weight||'0');
+        return [date||'', name||'', duration||'', exName||'', setOrder||'', w, reps||'0', distance||'0', seconds||'0', notes||'', workoutNotes||'', rpe||''];
+      });
+    if(dataRows.length === 0){
+      statusEl.textContent = "No workout rows found in that file.";
+      return;
+    }
+    const CHUNK = 2000;
+    for(let i=0; i<dataRows.length; i+=CHUNK){
+      const chunk = dataRows.slice(i, i+CHUNK);
+      statusEl.textContent = `Importing... ${Math.min(i+CHUNK, dataRows.length)}/${dataRows.length} rows`;
+      const range = encodeURIComponent(TAB_NAME + '!A1');
+      const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}:append?valueInputOption=RAW`, {
+        method: 'POST',
+        headers: {...authHeaders(), 'Content-Type':'application/json'},
+        body: JSON.stringify({ values: chunk })
+      });
+      if(!res.ok) throw new Error("Import request failed");
+    }
+    statusEl.textContent = `Imported ${dataRows.length} rows${needsConversion ? ` (converted ${importCsvUnit.toUpperCase()} → ${state.unit.toUpperCase()})` : ''}.`;
+    if(importContext === 'onboarding') await persistProfileFields({ import_prompted: true });
+    setTimeout(async ()=>{
+      document.getElementById('importOverlay').classList.remove('visible');
+      if(importContext === 'onboarding'){
+        await finishLogin();
+      } else {
+        showToast("Import complete");
+        await loadHistoryFromSheet();
+      }
+    }, 900);
+  } catch(err){
+    console.error(err);
+    statusEl.textContent = "Import failed — check your connection and try again.";
+  }
+}
+
+async function loadHistoryFromSheet(){
+  const range = encodeURIComponent(TAB_NAME + '!A2:L100000');
+  const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}`, {headers: authHeaders()});
+  if(!res.ok) throw new Error("Couldn't load sheet data");
+  const data = await res.json();
+  const rows = data.values || [];
+  const workoutsMap = {};
+  rows.forEach(r => {
+    const [date, name, duration, exName, setOrder, weight, reps, distance, seconds, notes] = r;
+    if(!date || !exName) return;
+    if(!Number.isFinite(Number(setOrder))) return;
+    const key = date + '|' + name + '|' + duration;
+    if(!workoutsMap[key]) workoutsMap[key] = {id: key, date, title:name, duration, exMap: {}};
+    const w = workoutsMap[key];
+    if(!w.exMap[exName]) w.exMap[exName] = {name: exName, cat: '', sets: []};
+    w.exMap[exName].sets.push({weight, reps, done: true, prev: null, type: notes === 'Warmup' ? 'warmup' : 'normal'});
+  });
+  state.history = Object.values(workoutsMap)
+    .map(w => ({...w, exercises: Object.values(w.exMap)}))
+    .sort((a,b) => String(a.date).localeCompare(String(b.date)));
+  computePRs(state.history);
+  renderHome();
+}
+
+function computePRs(history){
+  const bestSoFar = {};
+  history.forEach(w => {
+    const prNames = new Set();
+    w.exercises.forEach(ex => {
+      const bestThis = Math.max(0, ...ex.sets.filter(s => s.type !== 'warmup').map(s => Number(s.weight)||0));
+      const priorBest = bestSoFar[ex.name] || 0;
+      if(bestThis > 0 && bestThis > priorBest) prNames.add(ex.name);
+    });
+    w.prCount = prNames.size;
+    w.exercises.forEach(ex => {
+      const bestThis = Math.max(0, ...ex.sets.filter(s => s.type !== 'warmup').map(s => Number(s.weight)||0));
+      bestSoFar[ex.name] = Math.max(bestSoFar[ex.name] || 0, bestThis);
+    });
+  });
+}
+
+async function saveWorkoutToSheet(w){
+  const rows = [];
+  w.exercises.forEach(ex => {
+    let order = 0;
+    ex.sets.forEach(s => {
+      if(!s.done) return;
+      order++;
+      rows.push([w.date, w.title, w.duration, ex.name, order, s.weight, s.reps, 0, 0, s.type === 'warmup' ? 'Warmup' : '', '', '']);
+    });
+  });
+  if(rows.length === 0) return;
+  const range = encodeURIComponent(TAB_NAME + '!A1');
+  const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}:append?valueInputOption=RAW`, {
+    method: 'POST',
+    headers: {...authHeaders(), 'Content-Type':'application/json'},
+    body: JSON.stringify({ values: rows })
+  });
+  if(!res.ok) throw new Error("Couldn't save to sheet");
+}
+
+/* ============ HOME ============ */
+function renderHome(){
+  document.getElementById('statCount').textContent = state.history.length;
+  let totalVol = 0, totalPR = 0;
+  state.history.forEach(w => {
+    totalPR += w.prCount || 0;
+    w.exercises.forEach(ex => ex.sets.forEach(s => {
+      if(s.done && s.type !== 'warmup') totalVol += (Number(s.weight)||0) * (Number(s.reps)||0);
+    }));
+  });
+  document.getElementById('statVolume').textContent = totalVol.toLocaleString();
+  document.getElementById('statPRs').textContent = totalPR;
+
+  const list = document.getElementById('homeHistoryList');
+  if(state.history.length === 0){
+    list.innerHTML = '<div class="empty-state">Nothing logged yet. Tap <strong>Start Workout</strong> above to log your first session.</div>';
+    return;
+  }
+  list.innerHTML = state.history.slice(-3).reverse().map(historyCardHTML).join('');
+}
+
+function renderFullHistory(){
+  const list = document.getElementById('fullHistoryList');
+  if(state.history.length === 0){
+    list.innerHTML = '<div class="empty-state">No workouts yet.</div>';
+    return;
+  }
+  list.innerHTML = state.history.slice().reverse().map(historyCardHTML).join('');
+}
+
+function historyCardHTML(w){
+  const exCount = w.exercises.length;
+  const setCount = w.exercises.reduce((a,ex)=>a+ex.sets.filter(s=>s.done).length,0);
+  const prBadge = w.prCount > 0 ? `<span class="hc-pr">${w.prCount} PR${w.prCount>1?'s':''}</span>` : '';
+  return `<div class="history-card" onclick="openWorkoutDetail('${escapeAttr(w.id)}')">
+    <div class="hc-top">
+      <div class="hc-title">${escapeHtml(w.title)}${prBadge}</div>
+      <div class="hc-date">${escapeHtml(prettyDate(w.date))}</div>
+    </div>
+    <div class="hc-meta">${exCount} exercise${exCount!==1?'s':''} · ${setCount} sets · ${escapeHtml(w.duration||'')}</div>
+  </div>`;
+}
+
+/* ============ WORKOUT DETAIL ============ */
+function openWorkoutDetail(id){
+  const w = state.history.find(h => h.id === id);
+  if(!w) return;
+  detailReturnScreen = document.getElementById('screen-history').classList.contains('visible') ? 'history' : 'home';
+  renderWorkoutDetail(w);
+  showScreen('detail');
+}
+
+function closeWorkoutDetail(){
+  showScreen(detailReturnScreen);
+}
+
+function renderWorkoutDetail(w){
+  document.getElementById('detailTitle').textContent = w.title;
+  document.getElementById('detailDate').textContent = prettyDateTime(w.date);
+
+  const setCount = w.exercises.reduce((a,ex)=>a+ex.sets.length,0);
+  let vol = 0;
+  w.exercises.forEach(ex => ex.sets.forEach(s => { if(s.type !== 'warmup') vol += (Number(s.weight)||0) * (Number(s.reps)||0); }));
+  document.getElementById('detailStats').innerHTML = `
+    <div class="stat-card"><div class="num">${escapeHtml(w.duration||'—')}</div><div class="label">Duration</div></div>
+    <div class="stat-card"><div class="num">${vol.toLocaleString()}</div><div class="label">Volume</div></div>
+    <div class="stat-card"><div class="num">${setCount}</div><div class="label">Sets</div></div>
+  `;
+
+  document.getElementById('detailExerciseList').innerHTML = w.exercises.map(ex => {
+    let workingCount = 0;
+    const rows = ex.sets.map(s => {
+      const isWarmup = s.type === 'warmup';
+      if(!isWarmup) workingCount++;
+      const setLabel = isWarmup ? '<span class="warmup-badge">W</span>' : workingCount;
+      return `<tr><td class="set-num">${setLabel}</td><td>${s.weight||0}</td><td>${s.reps||0}</td></tr>`;
+    }).join('');
+    return `
+    <div class="exercise-card">
+      <div class="exercise-card-head">
+        <div class="ex-head-left">
+          <span class="ex-icon">🏋️</span>
+          <div><h3>${escapeHtml(ex.name)}</h3></div>
+        </div>
+      </div>
+      <table class="sets-table readonly">
+        <thead><tr><th>Set</th><th>${state.unit}</th><th>Reps</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+  }).join('');
+}
+
+/* ============ START / ACTIVE WORKOUT ============ */
+function persistActiveWorkout(){
+  if(state.activeWorkout){
+    localStorage.setItem('liftee_active_workout', JSON.stringify(state.activeWorkout));
+  } else {
+    localStorage.removeItem('liftee_active_workout');
+  }
+}
+
+function startWorkout(){
+  state.activeWorkout = {
+    id: String(Date.now()),
+    title: "Workout",
+    startedAt: Date.now(),
+    exercises: []
+  };
+  document.getElementById('workoutTitle').value = "Workout";
+  showScreen('workout');
+  renderWorkout();
+  startWorkoutTimer();
+  persistActiveWorkout();
+}
+
+function startWorkoutTimer(){
+  clearInterval(workoutTimerInterval);
+  workoutTimerInterval = setInterval(()=>{
+    if(!state.activeWorkout) return;
+    const secs = Math.floor((Date.now() - state.activeWorkout.startedAt)/1000);
+    const m = String(Math.floor(secs/60)).padStart(2,'0');
+    const s = String(secs%60).padStart(2,'0');
+    document.getElementById('workoutTimer').textContent = `${m}:${s}`;
+    document.getElementById('wsTime').textContent = `${Math.floor(secs/60)}:${s}`;
+  }, 1000);
+}
+
+function updateWorkoutStats(){
+  const w = state.activeWorkout;
+  if(!w) return;
+  let vol = 0, done = 0, total = 0;
+  w.exercises.forEach(ex => ex.sets.forEach(s => {
+    total++;
+    if(s.done){
+      done++;
+      if(s.type !== 'warmup') vol += (Number(s.weight)||0) * (Number(s.reps)||0);
+    }
+  }));
+  document.getElementById('wsVolume').textContent = vol.toLocaleString();
+  document.getElementById('wsSets').textContent = `${done}/${total}`;
+}
+
+document.addEventListener('input', (e)=>{
+  if(e.target.id === 'workoutTitle' && state.activeWorkout){
+    state.activeWorkout.title = e.target.value || "Workout";
+    persistActiveWorkout();
+  }
+});
+
+function renderWorkout(){
+  const container = document.getElementById('exerciseList');
+  const w = state.activeWorkout;
+  if(!w || w.exercises.length === 0){
+    container.innerHTML = '';
+    updateWorkoutStats();
+    persistActiveWorkout();
+    return;
+  }
+  container.innerHTML = w.exercises.map((ex, exIdx) => exerciseCardHTML(ex, exIdx)).join('');
+  updateWorkoutStats();
+  persistActiveWorkout();
+}
+
+function exerciseCardHTML(ex, exIdx){
+  let workingCount = 0;
+  const rows = ex.sets.map((s, sIdx) => {
+    const isWarmup = s.type === 'warmup';
+    if(!isWarmup) workingCount++;
+    const setLabel = isWarmup ? '<span class="warmup-badge">W</span>' : workingCount;
+    let rowHtml = `
+    <tr class="${s.done ? 'set-done':''}">
+      <td class="set-num" onclick="toggleSetType(${exIdx},${sIdx})">${setLabel}</td>
+      <td class="prev-cell">${s.prev || '—'}</td>
+      <td><input type="number" inputmode="decimal" value="${s.weight ?? ''}" placeholder="0"
+            onchange="updateSet(${exIdx},${sIdx},'weight',this.value)"></td>
+      <td><input type="number" inputmode="numeric" value="${s.reps ?? ''}" placeholder="0"
+            onchange="updateSet(${exIdx},${sIdx},'reps',this.value)"></td>
+      <td><button class="check-btn ${s.done?'done':''}" onclick="toggleSetDone(${exIdx},${sIdx})">${s.done?'✓':''}</button></td>
+    </tr>`;
+    if(ex.restingSetIdx === sIdx){
+      const remaining = Math.max(0, Math.round((ex.restEndsAt - Date.now())/1000));
+      rowHtml += `
+    <tr class="rest-row" id="rest-row-${exIdx}-${sIdx}">
+      <td colspan="5">
+        <div class="rest-bar-wrap" onclick="skipInlineRest(${exIdx},${sIdx})">
+          <div class="rest-bar-track"><div class="rest-bar-fill" style="width:${Math.max(0,(remaining/ex.restTotal)*100)}%"></div></div>
+          <span class="rest-time-label">${formatRestTime(remaining)}</span>
+        </div>
+      </td>
+    </tr>`;
+    }
+    return rowHtml;
+  }).join('');
+
+  return `<div class="exercise-card">
+    <div class="exercise-card-head">
+      <div class="ex-head-left">
+        <span class="ex-icon">🏋️</span>
+        <div>
+          <h3>${escapeHtml(ex.name)}</h3>
+          <div class="cat">${escapeHtml(ex.cat)}</div>
+        </div>
+      </div>
+      <button class="ex-remove" onclick="removeExercise(${exIdx})">&times;</button>
+    </div>
+    <table class="sets-table">
+      <thead><tr><th>Set</th><th>Prev</th><th>${state.unit}</th><th>Reps</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <button class="add-set-btn" onclick="addSet(${exIdx})">+ Add Set (${formatRestTime(state.restDefault)})</button>
+  </div>`;
+}
+
+function updateSet(exIdx, sIdx, field, value){
+  state.activeWorkout.exercises[exIdx].sets[sIdx][field] = value;
+  updateWorkoutStats();
+  persistActiveWorkout();
+}
+
+function addSet(exIdx){
+  const ex = state.activeWorkout.exercises[exIdx];
+  const last = ex.sets[ex.sets.length - 1];
+  ex.sets.push({weight: last ? last.weight : '', reps: last ? last.reps : '', done:false, prev:null, type:'normal'});
+  renderWorkout();
+}
+
+function toggleSetType(exIdx, sIdx){
+  const s = state.activeWorkout.exercises[exIdx].sets[sIdx];
+  s.type = s.type === 'warmup' ? 'normal' : 'warmup';
+  renderWorkout();
+}
+
+function toggleSetDone(exIdx, sIdx){
+  const ex = state.activeWorkout.exercises[exIdx];
+  const s = ex.sets[sIdx];
+  s.done = !s.done;
+  if(s.done){
+    ex.restingSetIdx = sIdx;
+    ex.restEndsAt = Date.now() + state.restDefault*1000;
+    ex.restTotal = state.restDefault;
+  } else if(ex.restingSetIdx === sIdx){
+    ex.restingSetIdx = null;
+  }
+  renderWorkout();
+  if(s.done){
+    startInlineRestTimer(exIdx, sIdx);
+  }
+}
+
+function cycleRestDefault(){
+  let idx = REST_PRESETS.indexOf(state.restDefault);
+  idx = (idx + 1) % REST_PRESETS.length;
+  state.restDefault = REST_PRESETS[idx];
+  updateRestDefaultChip();
+  persistProfileFields({ rest_default_seconds: state.restDefault });
+}
+
+function updateRestDefaultChip(){
+  const el = document.getElementById('restDefaultChip');
+  if(el) el.textContent = state.restDefault + 's';
+}
+
+function removeExercise(exIdx){
+  state.activeWorkout.exercises.splice(exIdx,1);
+  renderWorkout();
+}
+
+function cancelWorkout(){
+  if(!confirm("Discard this workout? Nothing will be saved.")) return;
+  clearInterval(workoutTimerInterval);
+  stopAllRestTimers();
+  state.activeWorkout = null;
+  persistActiveWorkout();
+  showScreen('home');
+}
+
+async function finishWorkout(){
+  const w = state.activeWorkout;
+  if(!w || w.exercises.length === 0){
+    showToast("Add at least one exercise first");
+    return;
+  }
+  clearInterval(workoutTimerInterval);
+  stopAllRestTimers();
+
+  const secs = Math.floor((Date.now() - w.startedAt)/1000);
+  w.duration = formatDuration(secs);
+  w.date = formatDateTime(new Date(w.startedAt));
+
+  const prExerciseNames = new Set();
+  w.exercises.forEach(ex => {
+    const bestThis = Math.max(0, ...ex.sets.filter(s=>s.done && s.type!=='warmup').map(s=>Number(s.weight)||0));
+    const bestPrior = Math.max(0, ...state.history.flatMap(h => h.exercises.filter(e=>e.name===ex.name).flatMap(e=>e.sets.filter(s=>s.done && s.type!=='warmup').map(s=>Number(s.weight)||0))));
+    if(bestThis > 0 && bestThis > bestPrior) prExerciseNames.add(ex.name);
+  });
+  w.prCount = prExerciseNames.size;
+
+  showToast("Saving to Google Sheets...");
+  try {
+    await saveWorkoutToSheet(w);
+    state.history.push(w);
+    state.activeWorkout = null;
+    persistActiveWorkout();
+    showScreen('home');
+    showToast(w.prCount > 0 ? `Saved — ${w.prCount} new PR${w.prCount>1?'s':''}!` : "Workout saved");
+  } catch(err){
+    console.error(err);
+    showToast("Couldn't save — check your connection and try again");
+  }
+}
+
+/* ============ REST TIMER (inline, per-set) ============ */
+function formatRestTime(sec){
+  const m = Math.floor(sec/60), s = sec%60;
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+
+function startInlineRestTimer(exIdx, sIdx){
+  clearInterval(restInterval);
+  restInterval = setInterval(()=>{
+    const ex = state.activeWorkout && state.activeWorkout.exercises[exIdx];
+    if(!ex || ex.restingSetIdx !== sIdx){ clearInterval(restInterval); return; }
+    const remaining = Math.max(0, Math.round((ex.restEndsAt - Date.now())/1000));
+    updateRestBarDisplay(exIdx, sIdx, remaining, ex.restTotal);
+    if(remaining <= 0){
+      ex.restingSetIdx = null;
+      clearInterval(restInterval);
+      renderWorkout();
+    }
+  }, 1000);
+}
+
+function updateRestBarDisplay(exIdx, sIdx, remaining, total){
+  const row = document.getElementById(`rest-row-${exIdx}-${sIdx}`);
+  if(!row) return;
+  const fill = row.querySelector('.rest-bar-fill');
+  const label = row.querySelector('.rest-time-label');
+  if(fill) fill.style.width = Math.max(0, (remaining/total)*100) + '%';
+  if(label) label.textContent = formatRestTime(remaining);
+}
+
+function skipInlineRest(exIdx, sIdx){
+  const ex = state.activeWorkout && state.activeWorkout.exercises[exIdx];
+  if(!ex || ex.restingSetIdx !== sIdx) return;
+  ex.restingSetIdx = null;
+  clearInterval(restInterval);
+  renderWorkout();
+}
+
+function stopAllRestTimers(){
+  clearInterval(restInterval);
+  restInterval = null;
+  if(state.activeWorkout){
+    state.activeWorkout.exercises.forEach(ex => { ex.restingSetIdx = null; });
+  }
+}
+
+/* ============ EXERCISE PICKER ============ */
+function openPicker(){
+  document.getElementById('exSearch').value = '';
+  renderPicker();
+  document.getElementById('pickerOverlay').classList.add('visible');
+}
+function closePicker(){
+  document.getElementById('pickerOverlay').classList.remove('visible');
+}
+function renderPicker(){
+  const q = document.getElementById('exSearch').value.trim().toLowerCase();
+  const filtered = EXERCISE_LIBRARY.filter(e => e.name.toLowerCase().includes(q));
+  const cats = [...new Set(filtered.map(e=>e.cat))];
+  let html = '';
+  cats.forEach(cat => {
+    html += `<div class="ex-cat-label">${cat}</div>`;
+    filtered.filter(e=>e.cat===cat).forEach(e => {
+      html += `<div class="ex-option" onclick="pickExercise('${escapeAttr(e.name)}','${escapeAttr(e.cat)}')">${escapeHtml(e.name)}</div>`;
+    });
+  });
+  if(filtered.length === 0) html = '<div class="empty-state" style="margin:16px;">No matches. Try a different search.</div>';
+  document.getElementById('pickerList').innerHTML = html;
+}
+function pickExercise(name, cat){
+  state.activeWorkout.exercises.push({
+    name, cat,
+    sets: [{weight:'', reps:'', done:false, prev:null}]
+  });
+  closePicker();
+  renderWorkout();
+}
+
+/* ============ UTIL ============ */
+function formatDateTime(d){
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+function formatDuration(totalSeconds){
+  const mins = Math.max(1, Math.round(totalSeconds/60));
+  const h = Math.floor(mins/60);
+  const m = mins % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+function prettyDate(dateStr){
+  if(!dateStr) return '';
+  const d = new Date(String(dateStr).replace(' ', 'T'));
+  if(isNaN(d)) return dateStr;
+  return d.toLocaleDateString(undefined, {month:'short', day:'numeric'});
+}
+function prettyDateTime(dateStr){
+  if(!dateStr) return '';
+  const d = new Date(String(dateStr).replace(' ', 'T'));
+  if(isNaN(d)) return dateStr;
+  return d.toLocaleString(undefined, {weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
+}
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function escapeAttr(str){
+  return String(str).replace(/'/g, "\\'");
+}
+
+init();
+</script>
+</body>
+</html>
