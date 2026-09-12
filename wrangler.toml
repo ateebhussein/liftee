@@ -5,6 +5,7 @@ main = "_worker.js/index.js"
 [assets]
 directory = "."
 binding = "ASSETS"
+run_worker_first = ["/api/*"]
 
 # --- Non-secret vars — fill in after creating your Supabase/Google Cloud
 # projects (see README.md). These are read by functions/api/google/*.js. ---
