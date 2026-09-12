@@ -4,7 +4,7 @@
 import { verifyUser } from './_shared/supabaseAuth.js';
 import { getGoogleConnection, upsertGoogleConnection } from './_shared/supabaseAdmin.js';
 import { refreshAccessToken } from './_shared/googleOAuth.js';
-import { createSpreadsheet, prepareExistingSpreadsheet, DEFAULT_SHEET_NAME } from './_shared/sheets.js';
+import { createSpreadsheet, prepareExistingSpreadsheet } from './_shared/sheets.js';
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -32,7 +32,8 @@ export async function onRequestPost(context) {
   let result;
   try {
     if (body.mode === 'create') {
-      result = await createSpreadsheet(accessToken, body.title || DEFAULT_SHEET_NAME);
+      const title = body.title || `lifteeworkout_${user.id}`;
+      result = await createSpreadsheet(accessToken, title);
     } else if (body.mode === 'existing' && body.spreadsheetId) {
       result = await prepareExistingSpreadsheet(accessToken, body.spreadsheetId);
     } else {
