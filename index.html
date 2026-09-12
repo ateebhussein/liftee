@@ -1356,7 +1356,10 @@ async function submitSheetChoice(body){
     });
     spreadsheetId = data.spreadsheetId;
     statusEl.textContent = "";
-    if(!profile.unit_setup_done){
+    if(!profile){
+      try { await loadProfile(session); } catch(err){ console.error(err); }
+    }
+    if(!profile || !profile.unit_setup_done){
       document.getElementById('unitSetupOverlay').classList.add('visible');
       return;
     }
