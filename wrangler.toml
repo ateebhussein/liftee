@@ -14,7 +14,7 @@ SUPABASE_URL = "https://gxodgouodtdhzbuzpgxv.supabase.co"
 SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4b2Rnb3VvZHRkaHpidXpwZ3h2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkxNzk0NDMsImV4cCI6MjEwNDc1NTQ0M30.5B-cgAYGYX3kMfOkc69KGP9bXJ5R8wK9UU2obnoWQIc"
 # Your Cloudflare Pages production URL, no trailing slash. Used server-side
 # to build Google's redirect_uri and the post-auth redirect back to the app.
-PUBLIC_SITE_URL = "https://PASTE_YOUR_PROJECT.pages.dev"
+PUBLIC_SITE_URL = "https://liftee.ateebhussein.workers.dev"
 
 # --- Secrets — do NOT put these here. Set them with:
 #   wrangler secret put GOOGLE_CLIENT_SECRET
