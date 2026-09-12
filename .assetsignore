@@ -4,3 +4,5 @@ supabase
 wrangler.toml
 README.md
 .github
+.git
+.wrangler
