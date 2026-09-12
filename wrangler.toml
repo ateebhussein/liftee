@@ -5,7 +5,7 @@ pages_build_output_dir = "."
 # --- Non-secret vars — fill in after creating your Supabase/Google Cloud
 # projects (see README.md). These are read by functions/api/google/*.js. ---
 [vars]
-GOOGLE_CLIENT_ID = "PASTE_YOUR_GOOGLE_OAUTH_CLIENT_ID"
+GOOGLE_CLIENT_ID = "723459572618-u2sqci1qlfao7rej2tl4b2rvojmv2tmp.apps.googleusercontent.com"
 SUPABASE_URL = "https://gxodgouodtdhzbuzpgxv.supabase.co"
 SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4b2Rnb3VvZHRkaHpidXpwZ3h2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkxNzk0NDMsImV4cCI6MjEwNDc1NTQ0M30.5B-cgAYGYX3kMfOkc69KGP9bXJ5R8wK9UU2obnoWQIc"
 # Your Cloudflare Pages production URL, no trailing slash. Used server-side
