@@ -1,6 +1,10 @@
 name = "liftee"
 compatibility_date = "2024-11-01"
-pages_build_output_dir = "."
+main = "_worker.js/index.js"
+
+[assets]
+directory = "."
+binding = "ASSETS"
 
 # --- Non-secret vars — fill in after creating your Supabase/Google Cloud
 # projects (see README.md). These are read by functions/api/google/*.js. ---
@@ -13,6 +17,6 @@ SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 PUBLIC_SITE_URL = "https://PASTE_YOUR_PROJECT.pages.dev"
 
 # --- Secrets — do NOT put these here. Set them with:
-#   wrangler pages secret put GOOGLE_CLIENT_SECRET
-#   wrangler pages secret put SUPABASE_SERVICE_ROLE_KEY
-#   wrangler pages secret put STATE_SIGNING_SECRET   (any long random string you generate)
+#   wrangler secret put GOOGLE_CLIENT_SECRET
+#   wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+#   wrangler secret put STATE_SIGNING_SECRET   (any long random string you generate)
