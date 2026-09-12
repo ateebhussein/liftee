@@ -2,7 +2,7 @@
 // or {mode:'existing', spreadsheetId, spreadsheetName?}. Creates a fresh
 // sheet or prepares/validates a picked one, then remembers the choice.
 import { verifyUser } from './_shared/supabaseAuth.js';
-import { getGoogleConnection, upsertGoogleConnection } from './_shared/supabaseAdmin.js';
+import { getGoogleConnection, updateGoogleConnection } from './_shared/supabaseAdmin.js';
 import { refreshAccessToken } from './_shared/googleOAuth.js';
 import { createSpreadsheet, prepareExistingSpreadsheet } from './_shared/sheets.js';
 
@@ -43,7 +43,7 @@ export async function onRequestPost(context) {
     return json({ error: 'sheet_setup_failed', message: String((err && err.message) || err) }, 502);
   }
 
-  await upsertGoogleConnection(env, user.id, {
+  await updateGoogleConnection(env, user.id, {
     spreadsheet_id: result.spreadsheetId,
     spreadsheet_name: result.spreadsheetName,
   });

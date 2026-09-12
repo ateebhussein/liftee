@@ -37,6 +37,17 @@ export async function upsertGoogleConnection(env, userId, fields) {
   return rows[0];
 }
 
+export async function updateGoogleConnection(env, userId, fields) {
+  const res = await fetch(restUrl(env, `google_connections?user_id=eq.${encodeURIComponent(userId)}`), {
+    method: 'PATCH',
+    headers: adminHeaders(env, { Prefer: 'return=representation' }),
+    body: JSON.stringify(fields),
+  });
+  if (!res.ok) throw new Error('supabase_update_failed: ' + (await res.text()));
+  const rows = await res.json();
+  return rows[0];
+}
+
 export async function deleteGoogleConnection(env, userId) {
   const res = await fetch(
     restUrl(env, `google_connections?user_id=eq.${encodeURIComponent(userId)}`),
