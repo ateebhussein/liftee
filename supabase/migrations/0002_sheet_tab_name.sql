@@ -6,3 +6,10 @@
 
 alter table public.google_connections
   add column sheet_tab_name text;
+
+-- Any connection made before this column existed was written against the
+-- old fixed "WorkoutLog" tab name — backfill it so those accounts keep
+-- working without having to reselect their sheet.
+update public.google_connections
+  set sheet_tab_name = 'WorkoutLog'
+  where spreadsheet_id is not null and sheet_tab_name is null;
