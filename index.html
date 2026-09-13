@@ -27,10 +27,10 @@
     --ink: #EDEDE6;
     --ink-dim: #9A9CA8;
     --ink-faint: #5E6069;
-    --accent: #E8B23D;
+    --accent: #EDEDE6;
     --accent-ink: #15161B;
-    --pr: #8FB86B;
-    --danger: #C1554D;
+    --pr: #C9CBD3;
+    --danger: #9A9CA8;
     --radius: 10px;
   }
 
@@ -320,7 +320,7 @@
   .history-card .hc-meta { font-size: 12px; color: var(--ink-dim); }
   .history-card .hc-pr {
     display: inline-block;
-    background: rgba(143,184,107,0.15);
+    background: rgba(201,203,211,0.15);
     color: var(--pr);
     font-size: 10px;
     font-weight: 600;
@@ -465,8 +465,8 @@
     border-color: var(--pr);
     color: #15161B;
   }
-  tr.set-done { background: rgba(143,184,107,0.10); }
-  tr.set-done td input { border-color: rgba(143,184,107,0.4); }
+  tr.set-done { background: rgba(201,203,211,0.10); }
+  tr.set-done td input { border-color: rgba(201,203,211,0.4); }
 
   .add-set-btn {
     width: 100%;
@@ -930,6 +930,8 @@
           <button data-unit="kg" onclick="setUnit('kg')">KG</button>
           <button data-unit="lb" onclick="setUnit('lb')">LB</button>
         </div>
+        <div class="section-label">Google Sheet</div>
+        <div class="hc-meta" id="settingsSheetName" style="margin-bottom:20px;"></div>
         <div class="section-label">Data</div>
         <button class="add-exercise-btn" style="margin-bottom:20px;" onclick="openSettingsImport()">Import from Strong CSV</button>
         <div class="cancel-link" style="color:var(--danger);" onclick="signOutFromSettings()">Sign out</div>
@@ -955,7 +957,6 @@ const SUPABASE_URL = "https://gxodgouodtdhzbuzpgxv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4b2Rnb3VvZHRkaHpidXpwZ3h2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkxNzk0NDMsImV4cCI6MjEwNDc1NTQ0M30.5B-cgAYGYX3kMfOkc69KGP9bXJ5R8wK9UU2obnoWQIc";
 const PICKER_API_KEY = "PASTE_YOUR_GOOGLE_PICKER_API_KEY";
 
-const TAB_NAME = "WorkoutLog";
 const HEADER_ROW = ["Date","Workout Name","Duration","Exercise Name","Set Order","Weight","Reps","Distance","Seconds","Notes","Workout Notes","RPE"];
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -1001,6 +1002,8 @@ let state = {
 
 let accessToken = null;
 let spreadsheetId = null;
+let spreadsheetName = null;
+let sheetTabName = null;
 let tokenRefreshTimer = null;
 let restInterval = null;
 let workoutTimerInterval = null;
@@ -1081,6 +1084,12 @@ function setImportUnit(u){
 /* ============ SETTINGS ============ */
 function openSettings(){
   syncUnitButtons();
+  const nameEl = document.getElementById('settingsSheetName');
+  if(spreadsheetId){
+    nameEl.innerHTML = `<a href="https://docs.google.com/spreadsheets/d/${spreadsheetId}" target="_blank" rel="noopener" style="color:inherit;">${escapeHtml(spreadsheetName || 'Untitled spreadsheet')}</a>`;
+  } else {
+    nameEl.textContent = 'Not connected';
+  }
   document.getElementById('settingsOverlay').classList.add('visible');
 }
 function closeSettings(){
@@ -1227,6 +1236,8 @@ async function postLoginFlow(){
   if(!status.connected){ showScreen('connect-google'); return; }
   if(!status.hasSheet){ showScreen('choose-sheet'); return; }
   spreadsheetId = status.spreadsheetId;
+  spreadsheetName = status.spreadsheetName;
+  sheetTabName = status.sheetTabName;
 
   if(!profile.unit_setup_done){
     document.getElementById('unitSetupOverlay').classList.add('visible');
@@ -1355,6 +1366,8 @@ async function submitSheetChoice(body){
       body: JSON.stringify(body),
     });
     spreadsheetId = data.spreadsheetId;
+    spreadsheetName = data.spreadsheetName;
+    sheetTabName = data.sheetTabName;
     statusEl.textContent = "";
     if(!profile){
       try { await loadProfile(session); } catch(err){ console.error(err); }
@@ -1493,7 +1506,7 @@ async function handleCSVImport(e){
     for(let i=0; i<dataRows.length; i+=CHUNK){
       const chunk = dataRows.slice(i, i+CHUNK);
       statusEl.textContent = `Importing... ${Math.min(i+CHUNK, dataRows.length)}/${dataRows.length} rows`;
-      const range = encodeURIComponent(TAB_NAME + '!A1');
+      const range = encodeURIComponent(sheetTabName + '!A1');
       const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}:append?valueInputOption=RAW`, {
         method: 'POST',
         headers: {...authHeaders(), 'Content-Type':'application/json'},
@@ -1519,7 +1532,7 @@ async function handleCSVImport(e){
 }
 
 async function loadHistoryFromSheet(){
-  const range = encodeURIComponent(TAB_NAME + '!A2:L100000');
+  const range = encodeURIComponent(sheetTabName + '!A2:L100000');
   const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}`, {headers: authHeaders()});
   if(!res.ok) throw new Error("Couldn't load sheet data");
   const data = await res.json();
@@ -1570,7 +1583,7 @@ async function saveWorkoutToSheet(w){
     });
   });
   if(rows.length === 0) return;
-  const range = encodeURIComponent(TAB_NAME + '!A1');
+  const range = encodeURIComponent(sheetTabName + '!A1');
   const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}:append?valueInputOption=RAW`, {
     method: 'POST',
     headers: {...authHeaders(), 'Content-Type':'application/json'},

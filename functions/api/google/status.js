@@ -17,6 +17,7 @@ export async function onRequestGet(context) {
     hasSheet: !!connection.spreadsheet_id,
     spreadsheetId: connection.spreadsheet_id || null,
     spreadsheetName: connection.spreadsheet_name || null,
+    sheetTabName: connection.sheet_tab_name || null,
   });
 }
 

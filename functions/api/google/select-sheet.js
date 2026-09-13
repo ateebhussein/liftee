@@ -32,8 +32,7 @@ export async function onRequestPost(context) {
   let result;
   try {
     if (body.mode === 'create') {
-      const title = body.title || `lifteeworkout_${user.id}`;
-      result = await createSpreadsheet(accessToken, title);
+      result = await createSpreadsheet(accessToken, body.title);
     } else if (body.mode === 'existing' && body.spreadsheetId) {
       result = await prepareExistingSpreadsheet(accessToken, body.spreadsheetId);
     } else {
@@ -46,9 +45,10 @@ export async function onRequestPost(context) {
   await updateGoogleConnection(env, user.id, {
     spreadsheet_id: result.spreadsheetId,
     spreadsheet_name: result.spreadsheetName,
+    sheet_tab_name: result.tabName,
   });
 
-  return json({ spreadsheetId: result.spreadsheetId, spreadsheetName: result.spreadsheetName });
+  return json({ spreadsheetId: result.spreadsheetId, spreadsheetName: result.spreadsheetName, sheetTabName: result.tabName });
 }
 
 function json(obj, status) {
