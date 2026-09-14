@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, user-scalable=no, interactive-widget=resizes-content">
 <title>Liftee — Workout Log</title>
 
 <!-- iOS "Add to Home Screen" behavior -->
@@ -424,8 +424,14 @@
     color: var(--ink-dim);
   }
 
-  .sets-table { width: 100%; border-collapse: collapse; }
-  .sets-table th {
+  .sets-table { width: 100%; }
+  .sets-head, .set-row {
+    display: grid;
+    grid-template-columns: 30px 1fr 64px 64px 40px;
+    align-items: center;
+    column-gap: 4px;
+  }
+  .sets-head {
     font-size: 10px;
     color: var(--ink-faint);
     text-transform: uppercase;
@@ -434,9 +440,11 @@
     text-align: center;
     padding: 8px 4px 4px;
   }
-  .sets-table td { padding: 5px 4px; text-align: center; }
-  .sets-table .prev-cell { color: var(--ink-faint); font-size: 11px; }
-  .sets-table input[type="number"] {
+  .sets-head > div { text-align: center; }
+  .set-row { padding: 5px 4px; text-align: center; background: var(--surface); position: relative; z-index: 1; }
+  .set-row > div { text-align: center; }
+  .set-row .prev-cell { color: var(--ink-faint); font-size: 11px; }
+  .set-row input[type="number"] {
     width: 52px;
     background: var(--surface-2);
     border: 1px solid var(--line);
@@ -447,7 +455,7 @@
     text-align: center;
     padding: 7px 2px;
   }
-  .sets-table input[type="number"]:focus { outline: none; border-color: var(--accent); }
+  .set-row input[type="number"]:focus { outline: none; border-color: var(--accent); }
   .set-num { color: var(--ink-dim); font-size: 12px; }
 
   .check-btn {
@@ -465,8 +473,28 @@
     border-color: var(--pr);
     color: #15161B;
   }
-  tr.set-done { background: rgba(201,203,211,0.10); }
-  tr.set-done td input { border-color: rgba(201,203,211,0.4); }
+  .set-row.set-done { background: rgba(201,203,211,0.10); }
+  .set-row.set-done input { border-color: rgba(201,203,211,0.4); }
+
+  /* ---------- Swipe-to-delete set row ---------- */
+  .set-row-wrap { position: relative; overflow: hidden; }
+  .set-row {
+    touch-action: pan-y;
+    transition: transform 0.2s ease;
+  }
+  .set-delete-bg {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    background: var(--surface-3);
+    color: var(--ink);
+    font-size: 12px;
+    font-weight: 600;
+    padding-right: 22px;
+    cursor: pointer;
+  }
 
   .add-set-btn {
     width: 100%;
@@ -497,8 +525,8 @@
   }
   .add-exercise-btn:hover { border-color: var(--accent); color: var(--accent); }
 
-  .rest-row td {
-    padding: 6px 10px !important;
+  .rest-row {
+    padding: 6px 10px;
   }
   .rest-bar-wrap {
     display: flex;
@@ -703,7 +731,17 @@
   .detail-head h2 { font-size: 18px; }
   .detail-head .hc-date { margin-top: 2px; }
   .detail-stat-row { margin-bottom: 22px; }
-  .sets-table.readonly td { padding: 8px 4px; }
+  .sets-table.readonly { width: 100%; border-collapse: collapse; }
+  .sets-table.readonly th {
+    font-size: 10px;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    font-weight: 500;
+    text-align: center;
+    padding: 8px 4px 4px;
+  }
+  .sets-table.readonly td { padding: 8px 4px; text-align: center; }
 
   /* ---------- Import overlay ---------- */
   .import-body { padding: 20px; }
@@ -1041,6 +1079,7 @@ function init(){
   }
 
   consumeGoogleRedirectHash();
+  initSwipeToDelete();
 
   supabaseClient.auth.onAuthStateChange((event) => {
     if(event === 'SIGNED_IN') postLoginFlow();
@@ -1799,26 +1838,27 @@ function exerciseCardHTML(ex, exIdx){
     if(!isWarmup) workingCount++;
     const setLabel = isWarmup ? '<span class="warmup-badge">W</span>' : workingCount;
     let rowHtml = `
-    <tr class="${s.done ? 'set-done':''}">
-      <td class="set-num" onclick="toggleSetType(${exIdx},${sIdx})">${setLabel}</td>
-      <td class="prev-cell">${s.prev || '—'}</td>
-      <td><input type="number" inputmode="decimal" value="${s.weight ?? ''}" placeholder="0"
-            onchange="updateSet(${exIdx},${sIdx},'weight',this.value)"></td>
-      <td><input type="number" inputmode="numeric" value="${s.reps ?? ''}" placeholder="0"
-            onchange="updateSet(${exIdx},${sIdx},'reps',this.value)"></td>
-      <td><button class="check-btn ${s.done?'done':''}" onclick="toggleSetDone(${exIdx},${sIdx})">${s.done?'✓':''}</button></td>
-    </tr>`;
+    <div class="set-row-wrap">
+      <div class="set-delete-bg" onclick="deleteSet(${exIdx},${sIdx})">Delete</div>
+      <div class="set-row ${s.done ? 'set-done':''}">
+        <div class="set-num" onclick="toggleSetType(${exIdx},${sIdx})">${setLabel}</div>
+        <div class="prev-cell">${s.prev || '—'}</div>
+        <div><input type="number" inputmode="decimal" value="${s.weight ?? ''}" placeholder="0"
+              onchange="updateSet(${exIdx},${sIdx},'weight',this.value)"></div>
+        <div><input type="number" inputmode="numeric" value="${s.reps ?? ''}" placeholder="0"
+              onchange="updateSet(${exIdx},${sIdx},'reps',this.value)"></div>
+        <div><button class="check-btn ${s.done?'done':''}" onclick="toggleSetDone(${exIdx},${sIdx})">${s.done?'✓':''}</button></div>
+      </div>
+    </div>`;
     if(ex.restingSetIdx === sIdx){
       const remaining = Math.max(0, Math.round((ex.restEndsAt - Date.now())/1000));
       rowHtml += `
-    <tr class="rest-row" id="rest-row-${exIdx}-${sIdx}">
-      <td colspan="5">
-        <div class="rest-bar-wrap" onclick="skipInlineRest(${exIdx},${sIdx})">
-          <div class="rest-bar-track"><div class="rest-bar-fill" style="width:${Math.max(0,(remaining/ex.restTotal)*100)}%"></div></div>
-          <span class="rest-time-label">${formatRestTime(remaining)}</span>
-        </div>
-      </td>
-    </tr>`;
+    <div class="rest-row" id="rest-row-${exIdx}-${sIdx}">
+      <div class="rest-bar-wrap" onclick="skipInlineRest(${exIdx},${sIdx})">
+        <div class="rest-bar-track"><div class="rest-bar-fill" style="width:${Math.max(0,(remaining/ex.restTotal)*100)}%"></div></div>
+        <span class="rest-time-label">${formatRestTime(remaining)}</span>
+      </div>
+    </div>`;
     }
     return rowHtml;
   }).join('');
@@ -1834,10 +1874,10 @@ function exerciseCardHTML(ex, exIdx){
       </div>
       <button class="ex-remove" onclick="removeExercise(${exIdx})">&times;</button>
     </div>
-    <table class="sets-table">
-      <thead><tr><th>Set</th><th>Prev</th><th>${state.unit}</th><th>Reps</th><th></th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
+    <div class="sets-table">
+      <div class="sets-head"><div>Set</div><div>Prev</div><div>${state.unit}</div><div>Reps</div><div></div></div>
+      ${rows}
+    </div>
     <button class="add-set-btn" onclick="addSet(${exIdx})">+ Add Set (${formatRestTime(state.restDefault)})</button>
   </div>`;
 }
@@ -1861,9 +1901,97 @@ function toggleSetType(exIdx, sIdx){
   renderWorkout();
 }
 
+/* ============ SWIPE-TO-DELETE (set rows) ============ */
+let swipeState = null;
+const SWIPE_OPEN_X = -72;
+const SWIPE_MAX_X = -100;
+
+function initSwipeToDelete(){
+  const container = document.getElementById('exerciseList');
+  container.addEventListener('touchstart', onSwipeStart, {passive:true});
+  container.addEventListener('touchmove', onSwipeMove, {passive:false});
+  container.addEventListener('touchend', onSwipeEnd, {passive:true});
+  container.addEventListener('touchcancel', onSwipeEnd, {passive:true});
+  container.addEventListener('click', onSwipeRowClickCapture, true);
+}
+
+function onSwipeRowClickCapture(e){
+  const openRow = e.target.closest('.set-row.swiped');
+  if(openRow){
+    e.preventDefault();
+    e.stopPropagation();
+    closeSwipeRow(openRow);
+  }
+}
+
+function onSwipeStart(e){
+  const row = e.target.closest('.set-row');
+  if(!row) return;
+  closeOpenSwipeRows(row);
+  const t = e.touches[0];
+  const startOffset = row.classList.contains('swiped') ? SWIPE_OPEN_X : 0;
+  swipeState = { row, startX: t.clientX, startY: t.clientY, startOffset, deciding: true, horizontal: false, dx: startOffset };
+}
+
+function onSwipeMove(e){
+  if(!swipeState) return;
+  const t = e.touches[0];
+  const dx = t.clientX - swipeState.startX;
+  const dy = t.clientY - swipeState.startY;
+  if(swipeState.deciding){
+    if(Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+    swipeState.deciding = false;
+    swipeState.horizontal = Math.abs(dx) > Math.abs(dy);
+    if(!swipeState.horizontal){ swipeState = null; return; }
+  }
+  if(!swipeState.horizontal) return;
+  e.preventDefault();
+  let translate = Math.min(0, swipeState.startOffset + dx);
+  translate = Math.max(translate, SWIPE_MAX_X);
+  swipeState.dx = translate;
+  swipeState.row.style.transform = `translateX(${translate}px)`;
+}
+
+function onSwipeEnd(){
+  if(!swipeState || !swipeState.horizontal){ swipeState = null; return; }
+  const row = swipeState.row;
+  if(swipeState.dx <= SWIPE_OPEN_X / 2){
+    row.style.transform = `translateX(${SWIPE_OPEN_X}px)`;
+    row.classList.add('swiped');
+  } else {
+    closeSwipeRow(row);
+  }
+  swipeState = null;
+}
+
+function closeSwipeRow(row){
+  row.style.transform = '';
+  row.classList.remove('swiped');
+}
+
+function closeOpenSwipeRows(exceptRow){
+  document.querySelectorAll('.set-row.swiped').forEach(r => {
+    if(r !== exceptRow) closeSwipeRow(r);
+  });
+}
+
+function deleteSet(exIdx, sIdx){
+  const ex = state.activeWorkout.exercises[exIdx];
+  ex.sets.splice(sIdx, 1);
+  if(ex.restingSetIdx === sIdx) ex.restingSetIdx = null;
+  else if(ex.restingSetIdx != null && ex.restingSetIdx > sIdx) ex.restingSetIdx--;
+  renderWorkout();
+}
+
 function toggleSetDone(exIdx, sIdx){
   const ex = state.activeWorkout.exercises[exIdx];
   const s = ex.sets[sIdx];
+  if(!s.done){
+    if(!Number(s.weight) || !Number(s.reps)){
+      showToast("Enter weight and reps before completing a set");
+      return;
+    }
+  }
   s.done = !s.done;
   if(s.done){
     ex.restingSetIdx = sIdx;
