@@ -290,6 +290,9 @@
     color: var(--ink-dim);
     margin-top: 4px;
   }
+  .stat-row-workout { grid-template-columns: 1fr 1fr 1fr auto; align-items: center; }
+  .stat-figures { display: flex; gap: 4px; padding: 0 4px; }
+  .stat-figures svg { fill: var(--ink-faint); }
 
   .empty-state {
     border: 1px dashed var(--line);
@@ -343,17 +346,23 @@
     font-family: 'Open Sans', sans-serif;
     font-size: 20px;
     font-weight: 600;
-    width: 65%;
+    flex: 1;
+    min-width: 0;
     padding: 0;
   }
   .workout-head input:focus { outline: none; border-bottom: 1px solid var(--accent); }
-  .timer-pill {
-    background: var(--surface-2);
-    border: 1px solid var(--line);
+  .finish-pill-btn {
+    background: var(--accent);
+    color: var(--accent-ink);
+    border: none;
     border-radius: 999px;
-    padding: 6px 12px;
-    font-size: 12px;
-    color: var(--ink-dim);
+    padding: 8px 20px;
+    font-family: 'Open Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-left: 10px;
   }
 
   .exercise-card {
@@ -376,7 +385,7 @@
   .ex-icon {
     width: 34px;
     height: 34px;
-    border-radius: 9px;
+    border-radius: 50%;
     background: var(--surface-2);
     border: 1px solid var(--line);
     display: flex;
@@ -457,6 +466,24 @@
   }
   .set-row input[type="number"]:focus { outline: none; border-color: var(--accent); }
   .set-num { color: var(--ink-dim); font-size: 12px; }
+  .set-row .set-num {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    background: var(--surface-3);
+    color: var(--ink);
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+  }
+  .rest-label {
+    font-size: 11px;
+    color: var(--ink-dim);
+    padding: 0 14px 10px;
+  }
 
   .check-btn {
     width: 30px;
@@ -585,6 +612,77 @@
     margin-top: 14px;
     cursor: pointer;
   }
+
+  /* ---------- Rest timer bar (fixed, above bottom nav) ---------- */
+  .rest-timer-bar {
+    display: none;
+    position: fixed;
+    bottom: calc(84px + env(safe-area-inset-bottom));
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 480px;
+    background: var(--surface-2);
+    border-top: 1px solid var(--line);
+    padding: 14px 18px calc(14px + env(safe-area-inset-bottom));
+    z-index: 21;
+  }
+  .rest-timer-bar.visible { display: block; }
+  .rest-timer-bar-track {
+    height: 3px;
+    background: var(--surface-3);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .rest-timer-bar-fill { height: 100%; background: var(--accent); transition: width 1s linear; }
+  .rest-timer-bar-time {
+    text-align: center;
+    font-size: 30px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 10px;
+  }
+  .rest-timer-bar-controls { display: flex; gap: 8px; }
+  .rest-timer-bar-controls button {
+    flex: 1;
+    background: var(--surface-3);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    color: var(--ink);
+    font-family: 'Open Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px;
+    cursor: pointer;
+  }
+  .rest-timer-bar-controls .skip-btn { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+  /* ---------- Muscle distribution panel ---------- */
+  .muscle-panel { display: none; padding: 10px 0 18px; }
+  .muscle-panel.visible { display: block; }
+  .muscle-diagrams { display: flex; gap: 14px; justify-content: center; margin-bottom: 16px; }
+  .muscle-diagrams svg { width: 45%; max-width: 130px; }
+  .muscle-region { fill: var(--surface-3); transition: fill 0.2s; }
+  .muscle-list-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--ink-dim);
+    padding: 6px 0;
+    border-bottom: 1px solid var(--line);
+    gap: 10px;
+  }
+  .muscle-list-row .mlr-bar-track {
+    flex: 1;
+    height: 6px;
+    background: var(--surface-3);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .muscle-list-row .mlr-bar-fill { height: 100%; background: var(--ink-dim); }
+  .muscle-list-row .mlr-count { color: var(--ink); min-width: 16px; text-align: right; }
 
   /* ---------- Bottom nav ---------- */
   .bottom-nav {
@@ -766,9 +864,6 @@
 
   <div class="topbar">
     <div class="brand" onclick="goHome()"><h1>Liftee</h1></div>
-    <div class="topbar-right">
-      <button class="settings-btn" id="settingsBtn" onclick="openSettings()">&#9881;</button>
-    </div>
   </div>
 
   <!-- ===== AUTH (SIGN UP / LOG IN) ===== -->
@@ -847,13 +942,17 @@
   <div class="screen" id="screen-workout">
     <div class="workout-head">
       <input type="text" id="workoutTitle" value="Workout">
-      <div class="timer-pill" id="workoutTimer">00:00</div>
+      <button class="finish-pill-btn" onclick="finishWorkout()">Finish</button>
     </div>
 
-    <div class="stat-row">
-      <div class="stat-card"><div class="num" id="wsTime">0:00</div><div class="label">Time</div></div>
+    <div class="stat-row stat-row-workout">
+      <div class="stat-card"><div class="num" id="wsTime">0:00</div><div class="label">Duration</div></div>
       <div class="stat-card"><div class="num" id="wsVolume">0</div><div class="label">Volume</div></div>
       <div class="stat-card"><div class="num" id="wsSets">0/0</div><div class="label">Sets</div></div>
+      <div class="stat-figures">
+        <svg viewBox="0 0 20 40" width="14"><circle cx="10" cy="6" r="5"/><path d="M2,14 Q10,8 18,14 L16,38 L11,38 L10,22 L9,38 L4,38 Z"/></svg>
+        <svg viewBox="0 0 20 40" width="14"><circle cx="10" cy="6" r="5"/><path d="M2,14 Q10,8 18,14 L16,38 L11,38 L10,22 L9,38 L4,38 Z"/></svg>
+      </div>
     </div>
 
     <div class="rest-setting-row">
@@ -861,16 +960,32 @@
       <button class="chip" id="restDefaultChip" onclick="cycleRestDefault()">90s</button>
     </div>
 
+    <div class="cancel-link" onclick="toggleMuscleDistribution()" id="muscleToggleLink">Muscle Distribution &#9662;</div>
+    <div id="muscleDistribution" class="muscle-panel"></div>
+
     <div id="exerciseList"></div>
 
     <button class="add-exercise-btn" onclick="openPicker()">+ Add Exercise</button>
-    <button class="finish-btn" onclick="finishWorkout()">Finish Workout</button>
     <div class="cancel-link" onclick="cancelWorkout()">Discard this workout</div>
+  </div>
+
+  <!-- ===== REST TIMER BAR (fixed, shown while resting) ===== -->
+  <div class="rest-timer-bar" id="restTimerBar">
+    <div class="rest-timer-bar-track"><div class="rest-timer-bar-fill" id="restBarFill"></div></div>
+    <div class="rest-timer-bar-time" id="restBarLabel">0:00</div>
+    <div class="rest-timer-bar-controls">
+      <button onclick="adjustRest(-15)">-15</button>
+      <button onclick="adjustRest(15)">+15</button>
+      <button class="skip-btn" onclick="skipRest()">Skip</button>
+    </div>
   </div>
 
   <!-- ===== HISTORY ===== -->
   <div class="screen" id="screen-history">
-    <div class="section-label" style="margin-top:6px;">All workouts</div>
+    <div class="detail-head">
+      <button class="back-btn" onclick="showScreen('profile')">&larr;</button>
+      <div><h2>All Workouts</h2></div>
+    </div>
     <div id="fullHistoryList">
       <div class="empty-state">No workouts yet.</div>
     </div>
@@ -894,8 +1009,11 @@
     <button class="nav-btn active" id="navHome" onclick="showScreen('home')">
       <span class="dot"></span>Home
     </button>
-    <button class="nav-btn" id="navHistory" onclick="showScreen('history')">
-      <span class="dot"></span>History
+    <button class="nav-btn" id="navWorkout" onclick="goToWorkoutTab()">
+      <span class="dot"></span>Workout
+    </button>
+    <button class="nav-btn" id="navProfile" onclick="showScreen('profile')">
+      <span class="dot"></span>Profile
     </button>
   </div>
 
@@ -953,38 +1071,31 @@
     </div>
   </div>
 
-  <!-- ===== SETTINGS OVERLAY ===== -->
-  <div class="overlay" id="settingsOverlay">
-    <div class="sheet">
-      <div class="sheet-head">
-        <div class="sheet-head-top">
-          <h2 style="font-size:15px;">Settings</h2>
-          <button class="close-x" onclick="closeSettings()">&times;</button>
-        </div>
-      </div>
-      <div class="import-body">
-        <div class="section-label" style="margin-top:0;">Units</div>
-        <div class="unit-toggle" id="settingsUnitToggle" style="margin-bottom:24px;">
-          <button data-unit="kg" onclick="setUnit('kg')">KG</button>
-          <button data-unit="lb" onclick="setUnit('lb')">LB</button>
-        </div>
-        <div class="section-label">Google Sheet</div>
-        <div class="hc-meta" id="settingsSheetName" style="margin-bottom:20px;"></div>
-        <div class="section-label">Data</div>
-        <button class="add-exercise-btn" style="margin-bottom:20px;" onclick="openSettingsImport()">Import from Strong CSV</button>
-        <div class="cancel-link" style="color:var(--danger);" onclick="signOutFromSettings()">Sign out</div>
+  <!-- ===== PROFILE ===== -->
+  <div class="screen" id="screen-profile">
+    <div class="greeting">Profile</div>
+    <div class="section-label" style="margin-top:22px;">Units</div>
+    <div class="unit-toggle" id="settingsUnitToggle" style="margin-bottom:24px;">
+      <button data-unit="kg" onclick="setUnit('kg')">KG</button>
+      <button data-unit="lb" onclick="setUnit('lb')">LB</button>
+    </div>
+    <div class="section-label">Google Sheet</div>
+    <div class="hc-meta" id="settingsSheetName" style="margin-bottom:20px;"></div>
+    <div class="section-label">History</div>
+    <button class="add-exercise-btn" style="margin-bottom:20px;" onclick="showScreen('history')">View All Workouts</button>
+    <div class="section-label">Data</div>
+    <button class="add-exercise-btn" style="margin-bottom:20px;" onclick="openSettingsImport()">Import from Strong CSV</button>
+    <div class="cancel-link" style="color:var(--danger);" onclick="signOutFromSettings()">Sign out</div>
 
-        <div class="section-label" style="margin-top:24px;">Danger Zone</div>
-        <div class="cancel-link" style="color:var(--danger);" onclick="showDeleteAccountWarning()">Delete Account</div>
-        <div id="deleteAccountWarning" style="display:none; margin-top:12px;">
-          <p style="font-size:12px; color:var(--ink-dim); line-height:1.5; margin-bottom:12px;">
-            This permanently deletes your Liftee account and disconnects Google. Your Google Sheet itself is <strong>not</strong> deleted — it stays in your Drive. This cannot be undone.
-          </p>
-          <button class="add-exercise-btn" style="border-color:var(--danger); color:var(--danger); margin-bottom:8px;" onclick="confirmDeleteAccount()">Yes, delete my account</button>
-          <div class="cancel-link" onclick="hideDeleteAccountWarning()">Cancel</div>
-          <div id="deleteAccountStatus" style="margin-top:8px;"></div>
-        </div>
-      </div>
+    <div class="section-label" style="margin-top:24px;">Danger Zone</div>
+    <div class="cancel-link" style="color:var(--danger);" onclick="showDeleteAccountWarning()">Delete Account</div>
+    <div id="deleteAccountWarning" style="display:none; margin-top:12px;">
+      <p style="font-size:12px; color:var(--ink-dim); line-height:1.5; margin-bottom:12px;">
+        This permanently deletes your Liftee account and disconnects Google. Your Google Sheet itself is <strong>not</strong> deleted — it stays in your Drive. This cannot be undone.
+      </p>
+      <button class="add-exercise-btn" style="border-color:var(--danger); color:var(--danger); margin-bottom:8px;" onclick="confirmDeleteAccount()">Yes, delete my account</button>
+      <div class="cancel-link" onclick="hideDeleteAccountWarning()">Cancel</div>
+      <div id="deleteAccountStatus" style="margin-top:8px;"></div>
     </div>
   </div>
 
@@ -1132,8 +1243,8 @@ function setImportUnit(u){
   });
 }
 
-/* ============ SETTINGS ============ */
-function openSettings(){
+/* ============ PROFILE ============ */
+function renderProfile(){
   syncUnitButtons();
   const nameEl = document.getElementById('settingsSheetName');
   if(spreadsheetId){
@@ -1143,17 +1254,11 @@ function openSettings(){
   }
   document.getElementById('deleteAccountWarning').style.display = 'none';
   document.getElementById('deleteAccountStatus').textContent = '';
-  document.getElementById('settingsOverlay').classList.add('visible');
-}
-function closeSettings(){
-  document.getElementById('settingsOverlay').classList.remove('visible');
 }
 function signOutFromSettings(){
-  closeSettings();
   signOut();
 }
 function openSettingsImport(){
-  closeSettings();
   openImportOverlay('manual');
 }
 function showDeleteAccountWarning(){
@@ -1169,7 +1274,6 @@ async function confirmDeleteAccount(){
   if(!session) return;
   try {
     await fetchJson('/api/account/delete', session, { method: 'POST' });
-    closeSettings();
     signOut();
   } catch(err){
     console.error(err);
@@ -1181,9 +1285,16 @@ function showScreen(name){
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('visible'));
   document.getElementById('screen-'+name).classList.add('visible');
   document.getElementById('navHome').classList.toggle('active', name==='home');
-  document.getElementById('navHistory').classList.toggle('active', name==='history');
+  document.getElementById('navWorkout').classList.toggle('active', name==='workout');
+  document.getElementById('navProfile').classList.toggle('active', name==='profile' || name==='history');
   if(name==='home') renderHome();
   if(name==='history') renderFullHistory();
+  if(name==='profile') renderProfile();
+}
+
+function goToWorkoutTab(){
+  if(state.activeWorkout){ showScreen('workout'); }
+  else { startWorkout(); }
 }
 
 function goHome(){
@@ -1279,7 +1390,6 @@ function resetToLoggedOutState(){
   localStorage.removeItem('liftee_active_workout');
   clearInterval(workoutTimerInterval);
   stopAllRestTimers();
-  document.getElementById('settingsBtn').classList.remove('visible');
   document.getElementById('bottomNav').classList.remove('visible');
   document.querySelector('.app').classList.remove('has-nav');
   setAuthMode('signup');
@@ -1482,11 +1592,11 @@ async function finishLogin(){
     document.querySelector('.app').classList.add('has-nav');
     if(state.activeWorkout){
       document.getElementById('workoutTitle').value = state.activeWorkout.title;
-      state.activeWorkout.exercises.forEach((ex, exIdx) => {
-        if(ex.restingSetIdx == null) return;
-        if(ex.restEndsAt <= Date.now()){ ex.restingSetIdx = null; return; }
-        startInlineRestTimer(exIdx, ex.restingSetIdx);
-      });
+      const r = state.activeWorkout.resting;
+      if(r){
+        if(r.endsAt <= Date.now()){ state.activeWorkout.resting = null; }
+        else resumeRestBar();
+      }
       showScreen('workout');
       renderWorkout();
       startWorkoutTimer();
@@ -1774,7 +1884,8 @@ function startWorkout(){
     id: String(Date.now()),
     title: "Workout",
     startedAt: Date.now(),
-    exercises: []
+    exercises: [],
+    resting: null
   };
   document.getElementById('workoutTitle').value = "Workout";
   showScreen('workout');
@@ -1788,9 +1899,7 @@ function startWorkoutTimer(){
   workoutTimerInterval = setInterval(()=>{
     if(!state.activeWorkout) return;
     const secs = Math.floor((Date.now() - state.activeWorkout.startedAt)/1000);
-    const m = String(Math.floor(secs/60)).padStart(2,'0');
     const s = String(secs%60).padStart(2,'0');
-    document.getElementById('workoutTimer').textContent = `${m}:${s}`;
     document.getElementById('wsTime').textContent = `${Math.floor(secs/60)}:${s}`;
   }, 1000);
 }
@@ -1808,6 +1917,56 @@ function updateWorkoutStats(){
   }));
   document.getElementById('wsVolume').textContent = vol.toLocaleString();
   document.getElementById('wsSets').textContent = `${done}/${total}`;
+  renderMuscleDistribution();
+}
+
+/* ============ MUSCLE DISTRIBUTION ============ */
+const MUSCLE_CATEGORIES = ['Chest','Back','Shoulders','Arms','Core','Legs'];
+
+function toggleMuscleDistribution(){
+  const panel = document.getElementById('muscleDistribution');
+  panel.classList.toggle('visible');
+  document.getElementById('muscleToggleLink').innerHTML =
+    'Muscle Distribution ' + (panel.classList.contains('visible') ? '&#9652;' : '&#9662;');
+  renderMuscleDistribution();
+}
+
+function renderMuscleDistribution(){
+  const panel = document.getElementById('muscleDistribution');
+  if(!panel || !panel.classList.contains('visible')) return;
+  const w = state.activeWorkout;
+  const counts = {};
+  MUSCLE_CATEGORIES.forEach(c => counts[c] = 0);
+  if(w){
+    w.exercises.forEach(ex => {
+      if(!(ex.cat in counts)) return;
+      ex.sets.forEach(s => { if(s.done && s.type !== 'warmup') counts[ex.cat]++; });
+    });
+  }
+  const max = Math.max(1, ...Object.values(counts));
+  function shade(cat){
+    const v = counts[cat] / max;
+    if(v <= 0) return 'var(--surface-3)';
+    const lightness = Math.round(65 - v*50);
+    return `hsl(0,0%,${lightness}%)`;
+  }
+  function svgBody(view){
+    const shoulders = `<rect class="muscle-region" x="18" y="28" width="14" height="12" rx="3" style="fill:${shade('Shoulders')}"/><rect class="muscle-region" x="68" y="28" width="14" height="12" rx="3" style="fill:${shade('Shoulders')}"/>`;
+    const arms = `<rect class="muscle-region" x="12" y="40" width="13" height="48" rx="5" style="fill:${shade('Arms')}"/><rect class="muscle-region" x="75" y="40" width="13" height="48" rx="5" style="fill:${shade('Arms')}"/>`;
+    const legs = `<rect class="muscle-region" x="33" y="100" width="15" height="75" rx="6" style="fill:${shade('Legs')}"/><rect class="muscle-region" x="52" y="100" width="15" height="75" rx="6" style="fill:${shade('Legs')}"/>`;
+    const torso = view === 'front'
+      ? `<rect class="muscle-region" x="34" y="32" width="32" height="20" rx="4" style="fill:${shade('Chest')}"/><rect class="muscle-region" x="36" y="54" width="28" height="32" rx="4" style="fill:${shade('Core')}"/>`
+      : `<rect class="muscle-region" x="30" y="28" width="40" height="58" rx="6" style="fill:${shade('Back')}"/>`;
+    return `<svg viewBox="0 0 100 200" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="14" r="12" fill="var(--surface-3)"/>
+      ${shoulders}${torso}${arms}${legs}
+    </svg>`;
+  }
+  const list = MUSCLE_CATEGORIES.map(cat => {
+    const pct = counts[cat] ? (counts[cat]/max)*100 : 0;
+    return `<div class="muscle-list-row"><span>${cat}</span><div class="mlr-bar-track"><div class="mlr-bar-fill" style="width:${pct}%"></div></div><span class="mlr-count">${counts[cat]}</span></div>`;
+  }).join('');
+  panel.innerHTML = `<div class="muscle-diagrams">${svgBody('front')}${svgBody('back')}</div>${list}`;
 }
 
 document.addEventListener('input', (e)=>{
@@ -1837,7 +1996,7 @@ function exerciseCardHTML(ex, exIdx){
     const isWarmup = s.type === 'warmup';
     if(!isWarmup) workingCount++;
     const setLabel = isWarmup ? '<span class="warmup-badge">W</span>' : workingCount;
-    let rowHtml = `
+    return `
     <div class="set-row-wrap">
       <div class="set-delete-bg" onclick="deleteSet(${exIdx},${sIdx})">Delete</div>
       <div class="set-row ${s.done ? 'set-done':''}">
@@ -1850,17 +2009,6 @@ function exerciseCardHTML(ex, exIdx){
         <div><button class="check-btn ${s.done?'done':''}" onclick="toggleSetDone(${exIdx},${sIdx})">${s.done?'✓':''}</button></div>
       </div>
     </div>`;
-    if(ex.restingSetIdx === sIdx){
-      const remaining = Math.max(0, Math.round((ex.restEndsAt - Date.now())/1000));
-      rowHtml += `
-    <div class="rest-row" id="rest-row-${exIdx}-${sIdx}">
-      <div class="rest-bar-wrap" onclick="skipInlineRest(${exIdx},${sIdx})">
-        <div class="rest-bar-track"><div class="rest-bar-fill" style="width:${Math.max(0,(remaining/ex.restTotal)*100)}%"></div></div>
-        <span class="rest-time-label">${formatRestTime(remaining)}</span>
-      </div>
-    </div>`;
-    }
-    return rowHtml;
   }).join('');
 
   return `<div class="exercise-card">
@@ -1874,11 +2022,12 @@ function exerciseCardHTML(ex, exIdx){
       </div>
       <button class="ex-remove" onclick="removeExercise(${exIdx})">&times;</button>
     </div>
+    <div class="rest-label">&#9201; Rest Timer: ${formatRestTime(state.restDefault)}</div>
     <div class="sets-table">
       <div class="sets-head"><div>Set</div><div>Prev</div><div>${state.unit}</div><div>Reps</div><div></div></div>
       ${rows}
     </div>
-    <button class="add-set-btn" onclick="addSet(${exIdx})">+ Add Set (${formatRestTime(state.restDefault)})</button>
+    <button class="add-set-btn" onclick="addSet(${exIdx})">+ Add Set</button>
   </div>`;
 }
 
@@ -1976,15 +2125,20 @@ function closeOpenSwipeRows(exceptRow){
 }
 
 function deleteSet(exIdx, sIdx){
-  const ex = state.activeWorkout.exercises[exIdx];
+  const w = state.activeWorkout;
+  const ex = w.exercises[exIdx];
   ex.sets.splice(sIdx, 1);
-  if(ex.restingSetIdx === sIdx) ex.restingSetIdx = null;
-  else if(ex.restingSetIdx != null && ex.restingSetIdx > sIdx) ex.restingSetIdx--;
+  const r = w.resting;
+  if(r && r.exIdx === exIdx){
+    if(r.sIdx === sIdx) stopRestBar();
+    else if(r.sIdx > sIdx) r.sIdx--;
+  }
   renderWorkout();
 }
 
 function toggleSetDone(exIdx, sIdx){
-  const ex = state.activeWorkout.exercises[exIdx];
+  const w = state.activeWorkout;
+  const ex = w.exercises[exIdx];
   const s = ex.sets[sIdx];
   if(!s.done){
     if(!Number(s.weight) || !Number(s.reps)){
@@ -1994,16 +2148,11 @@ function toggleSetDone(exIdx, sIdx){
   }
   s.done = !s.done;
   if(s.done){
-    ex.restingSetIdx = sIdx;
-    ex.restEndsAt = Date.now() + state.restDefault*1000;
-    ex.restTotal = state.restDefault;
-  } else if(ex.restingSetIdx === sIdx){
-    ex.restingSetIdx = null;
+    startRestBar(exIdx, sIdx, state.restDefault);
+  } else if(w.resting && w.resting.exIdx === exIdx && w.resting.sIdx === sIdx){
+    stopRestBar();
   }
   renderWorkout();
-  if(s.done){
-    startInlineRestTimer(exIdx, sIdx);
-  }
 }
 
 function cycleRestDefault(){
@@ -2027,7 +2176,7 @@ function removeExercise(exIdx){
 function cancelWorkout(){
   if(!confirm("Discard this workout? Nothing will be saved.")) return;
   clearInterval(workoutTimerInterval);
-  stopAllRestTimers();
+  stopRestBar();
   state.activeWorkout = null;
   persistActiveWorkout();
   showScreen('home');
@@ -2040,7 +2189,7 @@ async function finishWorkout(){
     return;
   }
   clearInterval(workoutTimerInterval);
-  stopAllRestTimers();
+  stopRestBar();
 
   const secs = Math.floor((Date.now() - w.startedAt)/1000);
   w.duration = formatDuration(secs);
@@ -2068,50 +2217,58 @@ async function finishWorkout(){
   }
 }
 
-/* ============ REST TIMER (inline, per-set) ============ */
+/* ============ REST TIMER (global bottom bar) ============ */
 function formatRestTime(sec){
   const m = Math.floor(sec/60), s = sec%60;
   return `${m}:${String(s).padStart(2,'0')}`;
 }
 
-function startInlineRestTimer(exIdx, sIdx){
+function startRestBar(exIdx, sIdx, totalSeconds){
+  state.activeWorkout.resting = { exIdx, sIdx, endsAt: Date.now() + totalSeconds*1000, total: totalSeconds };
+  resumeRestBar();
+}
+
+function resumeRestBar(){
   clearInterval(restInterval);
+  document.getElementById('restTimerBar').classList.add('visible');
+  updateRestBarUI();
   restInterval = setInterval(()=>{
-    const ex = state.activeWorkout && state.activeWorkout.exercises[exIdx];
-    if(!ex || ex.restingSetIdx !== sIdx){ clearInterval(restInterval); return; }
-    const remaining = Math.max(0, Math.round((ex.restEndsAt - Date.now())/1000));
-    updateRestBarDisplay(exIdx, sIdx, remaining, ex.restTotal);
-    if(remaining <= 0){
-      ex.restingSetIdx = null;
-      clearInterval(restInterval);
-      renderWorkout();
-    }
+    if(!state.activeWorkout || !state.activeWorkout.resting){ clearInterval(restInterval); return; }
+    const remaining = Math.max(0, Math.round((state.activeWorkout.resting.endsAt - Date.now())/1000));
+    if(remaining <= 0){ stopRestBar(); renderWorkout(); return; }
+    updateRestBarUI();
   }, 1000);
 }
 
-function updateRestBarDisplay(exIdx, sIdx, remaining, total){
-  const row = document.getElementById(`rest-row-${exIdx}-${sIdx}`);
-  if(!row) return;
-  const fill = row.querySelector('.rest-bar-fill');
-  const label = row.querySelector('.rest-time-label');
-  if(fill) fill.style.width = Math.max(0, (remaining/total)*100) + '%';
+function updateRestBarUI(){
+  const r = state.activeWorkout && state.activeWorkout.resting;
+  if(!r) return;
+  const remaining = Math.max(0, Math.round((r.endsAt - Date.now())/1000));
+  const fill = document.getElementById('restBarFill');
+  const label = document.getElementById('restBarLabel');
+  if(fill) fill.style.width = Math.max(0, (remaining/r.total)*100) + '%';
   if(label) label.textContent = formatRestTime(remaining);
 }
 
-function skipInlineRest(exIdx, sIdx){
-  const ex = state.activeWorkout && state.activeWorkout.exercises[exIdx];
-  if(!ex || ex.restingSetIdx !== sIdx) return;
-  ex.restingSetIdx = null;
-  clearInterval(restInterval);
+function adjustRest(deltaSeconds){
+  const r = state.activeWorkout && state.activeWorkout.resting;
+  if(!r) return;
+  r.endsAt += deltaSeconds*1000;
+  r.total = Math.max(1, r.total + deltaSeconds);
+  updateRestBarUI();
+}
+
+function skipRest(){
+  stopRestBar();
   renderWorkout();
 }
 
-function stopAllRestTimers(){
+function stopRestBar(){
   clearInterval(restInterval);
   restInterval = null;
-  if(state.activeWorkout){
-    state.activeWorkout.exercises.forEach(ex => { ex.restingSetIdx = null; });
-  }
+  if(state.activeWorkout) state.activeWorkout.resting = null;
+  const bar = document.getElementById('restTimerBar');
+  if(bar) bar.classList.remove('visible');
 }
 
 /* ============ EXERCISE PICKER ============ */
