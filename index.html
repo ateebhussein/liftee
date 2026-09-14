@@ -1587,7 +1587,6 @@ async function finishLogin(){
   try {
     await fetchAccessToken();
     await loadHistoryFromSheet();
-    document.getElementById('settingsBtn').classList.add('visible');
     document.getElementById('bottomNav').classList.add('visible');
     document.querySelector('.app').classList.add('has-nav');
     if(state.activeWorkout){
