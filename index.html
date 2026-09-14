@@ -967,6 +967,7 @@
 const SUPABASE_URL = "https://gxodgouodtdhzbuzpgxv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4b2Rnb3VvZHRkaHpidXpwZ3h2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkxNzk0NDMsImV4cCI6MjEwNDc1NTQ0M30.5B-cgAYGYX3kMfOkc69KGP9bXJ5R8wK9UU2obnoWQIc";
 const PICKER_API_KEY = "AIzaSyDK7jnH8c0G17FzIdppPDPXRycxwkaEs90";
+const GOOGLE_APP_ID = "723459572618"; // Google Cloud project number — required by Picker for drive.file to grant access to picked files
 
 const HEADER_ROW = ["Date","Workout Name","Duration","Exercise Name","Set Order","Weight","Reps","Distance","Seconds","Notes","Workout Notes","RPE"];
 
@@ -1366,6 +1367,7 @@ async function openExistingSheetPicker(){
     .addView(view)
     .setOAuthToken(accessToken)
     .setDeveloperKey(PICKER_API_KEY)
+    .setAppId(GOOGLE_APP_ID)
     .setCallback(onSheetPicked)
     .build()
     .setVisible(true);
